@@ -118,6 +118,9 @@ jobs:
   // App module
   const appFolder = zip.folder('app')!;
   appFolder.file('build.gradle.kts', generateBuildGradle(config));
+  if (config.googleServicesJson && config.googleServicesJson.trim()) {
+    appFolder.file('google-services.json', config.googleServicesJson.trim());
+  }
   appFolder.file(
     'proguard-rules.pro',
     `# Proguard rules for Fullscreen WebView & Ads
@@ -239,6 +242,9 @@ ${
   const assetsFolder = mainFolder.folder('assets')!;
   assetsFolder.file('app_config.json', generateAppConfigJson(config));
   assetsFolder.file('app_logo.png', logoBase64, { base64: true });
+  if (config.googleServicesJson && config.googleServicesJson.trim()) {
+    assetsFolder.file('google-services.json', config.googleServicesJson.trim());
+  }
   if (splashBase64) {
     assetsFolder.file('splash_image.png', splashBase64, { base64: true });
   }

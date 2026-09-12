@@ -45,6 +45,7 @@ import {
 } from '../types';
 import { resizeLogoTo512, resizeSplashTo1080x1920 } from '../utils/imageResizer';
 import { KeystoreSection } from './KeystoreSection';
+import { GoogleServicesSection } from './GoogleServicesSection';
 
 interface AppConfigFormProps {
   config: AppConfig;
@@ -127,7 +128,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     onChange({ packageName: `com.company.${cleanName || 'app'}` });
   };
 
-  // Permission toggle handler
+  // Permission toggle handlers
   const handlePermissionToggle = (key: keyof AppPermissions) => {
     const current = config.permissions || {
       internet: true,
@@ -140,11 +141,66 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
       recordAudio: false,
       modifyAudioSettings: false,
       vibrate: true,
+      postNotifications: true,
     };
     onChange({
       permissions: {
         ...current,
         [key]: !current[key],
+      },
+    });
+  };
+
+  const handleSelectAllPermissions = () => {
+    onChange({
+      permissions: {
+        internet: true,
+        accessNetworkState: true,
+        accessCoarseLocation: true,
+        accessFineLocation: true,
+        camera: true,
+        readExternalStorage: true,
+        writeExternalStorage: true,
+        recordAudio: true,
+        modifyAudioSettings: true,
+        vibrate: true,
+        postNotifications: true,
+      },
+    });
+  };
+
+  const handleSelectRecommendedPermissions = () => {
+    onChange({
+      permissions: {
+        internet: true,
+        accessNetworkState: true,
+        accessCoarseLocation: false,
+        accessFineLocation: false,
+        camera: false,
+        readExternalStorage: true,
+        writeExternalStorage: true,
+        recordAudio: false,
+        modifyAudioSettings: false,
+        vibrate: true,
+        postNotifications: true,
+      },
+    });
+  };
+
+  const handleClearAllPermissions = () => {
+    onChange({
+      permissions: {
+        internet: false,
+        accessNetworkState: false,
+        accessCoarseLocation: false,
+        accessFineLocation: false,
+        camera: false,
+        readExternalStorage: false,
+        writeExternalStorage: false,
+        recordAudio: false,
+        modifyAudioSettings: false,
+        vibrate: false,
+        postNotifications: false,
       },
     });
   };
@@ -306,6 +362,13 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
       bengali: 'ভাইব্রেশন ও হ্যাপটিক',
       manifestTag: 'android.permission.VIBRATE',
       desc: 'Haptic feedback on clicks, alerts, and notifications',
+    },
+    {
+      key: 'postNotifications',
+      name: 'Push Notifications',
+      bengali: 'পুশ নোটিফিকেশন ও অ্যালার্ট (Android 13+)',
+      manifestTag: 'android.permission.POST_NOTIFICATIONS',
+      desc: 'Push alerts, background download progress, and local notification popups',
     },
   ];
 
@@ -1206,7 +1269,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
 
       {/* 7. Customizable Android Permissions (কাস্টমাইজ পারমিশনস - টিকমার্ক অপশনস) */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold">
               7
@@ -1216,13 +1279,44 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                 Customize Permissions (কাস্টমাইজ পারমিশনস)
               </h2>
               <p className="text-xs text-slate-400">
-                অ্যাপের প্রয়োজনীয় অ্যান্ড্রয়েড পারমিশন সিলেক্ট করুন
+                অ্যাপের প্রয়োজনীয় অ্যান্ড্রয়েড পারমিশন সিলেক্ট করুন (APK ও AAB উভয় বিল্ডেই প্রযোজ্য)
               </p>
             </div>
           </div>
-          <span className="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800">
-            AndroidManifest.xml
-          </span>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-[11px] font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-md">
+              {permissionsList.filter((p) => !!config.permissions?.[p.key]).length} of {permissionsList.length} Selected
+            </span>
+            <span className="text-[11px] text-slate-400 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800 font-mono">
+              AndroidManifest.xml
+            </span>
+          </div>
+        </div>
+
+        {/* Quick Selection Presets */}
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-slate-950/60 rounded-xl border border-slate-800/80">
+          <span className="text-[11px] text-slate-400 px-1 font-medium">Quick Presets:</span>
+          <button
+            type="button"
+            onClick={handleSelectRecommendedPermissions}
+            className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+          >
+            Recommended (প্রস্তাবিত)
+          </button>
+          <button
+            type="button"
+            onClick={handleSelectAllPermissions}
+            className="text-[11px] px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition"
+          >
+            Select All (সব সিলেক্ট)
+          </button>
+          <button
+            type="button"
+            onClick={handleClearAllPermissions}
+            className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 transition"
+          >
+            Clear All (সব বাতিল)
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1272,9 +1366,29 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             );
           })}
         </div>
+
+        <div className="mt-4 p-3 bg-slate-950/40 border border-slate-800/80 rounded-xl flex items-center justify-between text-[11px] text-slate-400">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            নির্বাচিত পারমিশনগুলো APK এবং AAB উভয় প্যাকেজের AndroidManifest.xml-এ সরাসরি অন্তর্ভুক্ত করা হবে এবং রানটাইমে এক্টিভ থাকবে।
+          </span>
+        </div>
       </div>
 
-      {/* 8. Custom Keystore & Signing Section */}
+      {/* 8. Google Services & Firebase Configuration (google-services.json) */}
+      <GoogleServicesSection
+        googleServicesJson={config.googleServicesJson}
+        googleServicesFileName={config.googleServicesFileName}
+        currentPackageName={config.packageName}
+        onUpdate={({ googleServicesJson, googleServicesFileName }) =>
+          onChange({ googleServicesJson, googleServicesFileName })
+        }
+        onSyncPackageName={(newPackageName) =>
+          onChange({ packageName: newPackageName })
+        }
+      />
+
+      {/* 9. Custom Keystore & Signing Section */}
       <KeystoreSection
         keystore={config.keystore}
         appName={config.appName}

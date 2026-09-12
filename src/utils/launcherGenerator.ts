@@ -47,6 +47,7 @@ export function generateLauncherHtml(config: AppConfig, logoBase64?: string): st
     (isStartIo && config.startio?.showInterstitial);
 
   const interstitialIntervalMinutes = config.interstitialIntervalMinutes ?? 3;
+  const googleServicesRaw = config.googleServicesJson?.trim() || '';
 
   const admobAppId = config.admob?.appId || 'ca-app-pub-3940256099942544~3347511713';
   const admobInterstitialId = config.admob?.interstitialId || 'ca-app-pub-3940256099942544/1033173712';
@@ -778,6 +779,13 @@ export function generateLauncherHtml(config: AppConfig, logoBase64?: string): st
     const IS_STARTIO = ${isStartIo ? 'true' : 'false'};
     const IS_ADMOB = ${isAdMob ? 'true' : 'false'};
     const STARTIO_APP_ID = ${JSON.stringify(startioAppId)};
+    const GOOGLE_SERVICES_JSON = ${JSON.stringify(googleServicesRaw)};
+
+    if (GOOGLE_SERVICES_JSON) {
+      try {
+        window.__GOOGLE_SERVICES__ = JSON.parse(GOOGLE_SERVICES_JSON);
+      } catch (e) {}
+    }
 
     // --- FEATURE 7: DEEP LINKING SUPPORT ---
     if (DEEP_LINKING) {

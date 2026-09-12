@@ -149,6 +149,7 @@ export function patchBinaryAndroidManifest(
       permissionsToEnsure.push('android.permission.MODIFY_AUDIO_SETTINGS');
     }
     if (p.vibrate) permissionsToEnsure.push('android.permission.VIBRATE');
+    if (p.postNotifications !== false) permissionsToEnsure.push('android.permission.POST_NOTIFICATIONS');
     if (config.adNetwork === 'admob' || config.adNetwork === 'startio') {
       permissionsToEnsure.push('com.google.android.gms.permission.AD_ID');
     }
@@ -312,12 +313,13 @@ export function patchBinaryAndroidManifest(
             }
           }
 
-          // If this permission was explicitly disabled by user (e.g. readExternalStorage is false), skip it
-          const isExplicitlyDisabled = 
-            (permName === 'android.permission.READ_EXTERNAL_STORAGE' && p.readExternalStorage === false) ||
-            (permName === 'android.permission.WRITE_EXTERNAL_STORAGE' && p.writeExternalStorage === false);
+          // Any configurable permission that is NOT in permissionsToEnsure must be excluded/skipped
+          const isConfigurable =
+            permName.startsWith('android.permission.') &&
+            permName !== 'android.permission.REQUEST_INSTALL_PACKAGES' &&
+            permName !== 'android.permission.DUMP';
 
-          if (isExplicitlyDisabled) {
+          if (isConfigurable && !permissionsToEnsure.includes(permName)) {
             skipNextEndElement = true;
             curOff += chunkSize;
             continue;

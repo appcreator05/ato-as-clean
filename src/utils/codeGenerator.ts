@@ -52,6 +52,7 @@ export function generateManifestXml(config: AppConfig): string {
     ${p.recordAudio ? '<uses-permission android:name="android.permission.RECORD_AUDIO" />' : ''}
     ${p.modifyAudioSettings ? '<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' : ''}
     ${p.vibrate ? '<uses-permission android:name="android.permission.VIBRATE" />' : ''}
+    ${p.postNotifications !== false ? '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' : ''}
     <!-- Advertising ID Permission (Mandatory for Android 13+ / API 33+ real live ads) -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
@@ -271,6 +272,9 @@ ${
 
         // 5. Handle Back Navigation (Back within WebView history before exiting)
         setupBackNavigation()
+
+        // 6. Request user-configured permissions on launch (Camera, Location, Storage, Audio, Notifications)
+        checkAndRequestConfiguredPermissions()
     }
 
     /**
@@ -323,7 +327,7 @@ ${
         settings.builtInZoomControls = ${config.allowZoom}
         settings.displayZoomControls = false
         settings.saveFormData = ${Boolean(config.saveFormData)}
-        ${config.enableGpsPrompt ? 'settings.setGeolocationEnabled(true)' : ''}
+        ${(config.enableGpsPrompt || config.permissions?.accessFineLocation || config.permissions?.accessCoarseLocation) ? 'settings.setGeolocationEnabled(true)' : ''}
 
         // Popup Redirects, Subscriptions & Payment Gateway Window Support
         ${
@@ -407,8 +411,30 @@ ${
                 : ''
             }
 
+            // WebRTC / Camera & Microphone capture permission from HTML5
+            override fun onPermissionRequest(request: android.webkit.PermissionRequest?) {
+                runOnUiThread {
+                    val requestedResources = request?.resources ?: return@runOnUiThread
+                    val granted = ArrayList<String>()
+                    for (r in requestedResources) {
+                        if (r == android.webkit.PermissionRequest.RESOURCE_VIDEO_CAPTURE && ${Boolean(config.permissions?.camera)}) {
+                            granted.add(r)
+                        } else if (r == android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE && ${Boolean(config.permissions?.recordAudio)}) {
+                            granted.add(r)
+                        } else {
+                            granted.add(r)
+                        }
+                    }
+                    if (granted.isNotEmpty()) {
+                        request.grant(granted.toTypedArray())
+                    } else {
+                        request.deny()
+                    }
+                }
+            }
+
             ${
-              config.enableGpsPrompt
+              (config.enableGpsPrompt || config.permissions?.accessFineLocation || config.permissions?.accessCoarseLocation)
                 ? `override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
                 callback: android.webkit.GeolocationPermissions.Callback?
@@ -1272,6 +1298,73 @@ ${
         })
     }
 
+    /**
+     * Dynamically requests user-configured permissions on Android 6.0+ (API 23+)
+     */
+    private fun checkAndRequestConfiguredPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val needed = ArrayList<String>()
+            ${
+              (config.permissions?.accessFineLocation || config.enableGpsPrompt)
+                ? `if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            }`
+                : ''
+            }
+            ${
+              (config.permissions?.accessCoarseLocation || config.enableGpsPrompt)
+                ? `if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+            }`
+                : ''
+            }
+            ${
+              config.permissions?.camera
+                ? `if (checkSelfPermission(android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(android.Manifest.permission.CAMERA)
+            }`
+                : ''
+            }
+            ${
+              config.permissions?.recordAudio
+                ? `if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(android.Manifest.permission.RECORD_AUDIO)
+            }`
+                : ''
+            }
+            ${
+              config.permissions?.readExternalStorage
+                ? `if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    needed.add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+                }
+            }`
+                : ''
+            }
+            ${
+              config.permissions?.writeExternalStorage
+                ? `if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    needed.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                }
+            }`
+                : ''
+            }
+            ${
+              config.permissions?.postNotifications !== false
+                ? `if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                    needed.add("android.permission.POST_NOTIFICATIONS")
+                }
+            }`
+                : ''
+            }
+            if (needed.isNotEmpty()) {
+                requestPermissions(needed.toTypedArray(), 101)
+            }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         ${config.fullscreenMode ? 'setupFullscreenImmersive()' : ''}
@@ -1340,10 +1433,12 @@ class SplashActivity : AppCompatActivity() {
 export function generateBuildGradle(config: AppConfig): string {
   const isAdMob = config.adNetwork === 'admob';
   const isStartIo = config.adNetwork === 'startio';
+  const hasGoogleServices = Boolean(config.googleServicesJson && config.googleServicesJson.trim());
 
   return `plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    ${hasGoogleServices ? 'id("com.google.gms.google-services")' : ''}
 }
 
 android {
@@ -1403,6 +1498,14 @@ dependencies {
 
     ${isAdMob ? '// Google Mobile Ads (GMA) Next-Gen SDK (Latest Production Release)\n    implementation("com.google.android.gms:play-services-ads:24.0.0")' : ''}
     ${isStartIo ? '// Start.io In-App SDK 5.1.0\n    implementation("com.startapp:inapp-sdk:5.1.0")' : ''}
+    ${
+      hasGoogleServices
+        ? `// Firebase & Google Services SDK (Platform BoM)
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")`
+        : ''
+    }
 }`;
 }
 

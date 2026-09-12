@@ -186,6 +186,15 @@ async function startServer() {
       // 1. Inject complete app_config.json containing all features, permissions, and settings
       zip.file('assets/app_config.json', JSON.stringify(config, null, 2));
 
+      // 1.1 Inject google-services.json if provided by user
+      if (config.googleServicesJson && config.googleServicesJson.trim()) {
+        const gsContent = config.googleServicesJson.trim();
+        zip.file('assets/google-services.json', gsContent);
+        zip.file('assets/web/google-services.json', gsContent);
+        zip.file('google-services.json', gsContent);
+        zip.file('res/raw/google_services.json', gsContent);
+      }
+
       // 2. Inject launcher index.html with live ads and orientation engine
       const launcherHtml = generateLauncherHtml(config, logoBase64 || undefined);
       zip.file('assets/web/index.html', launcherHtml);

@@ -140,7 +140,7 @@ Package-Name: ${config.packageName}
 Target-SDK: 36
 Min-SDK: 23
 Fullscreen-Mode: true
-Ad-Network: ${config.adNetwork.toUpperCase()}
+Ad-Network: ${(config.adNetwork || 'none').toUpperCase()}
 Live-Ads-Mode: true
 AdMob-SDK: Google Mobile Ads (GMA) Next-Gen SDK
 StartIo-SDK: 5.1.0
@@ -261,6 +261,15 @@ export async function buildDirectApkFile(
 
     // 1. Inject app_config.json
     zip.file('assets/app_config.json', generateAppConfigJson(config));
+
+    // 1.1 Inject google-services.json if provided by user
+    if (config.googleServicesJson && config.googleServicesJson.trim()) {
+      const gsContent = config.googleServicesJson.trim();
+      zip.file('assets/google-services.json', gsContent);
+      zip.file('assets/web/google-services.json', gsContent);
+      zip.file('google-services.json', gsContent);
+      zip.file('res/raw/google_services.json', gsContent);
+    }
 
     // 2. Inject launcher index.html with live ads and orientation engine
     const launcherHtml = generateLauncherHtml(config, logoBase64 || undefined);
@@ -458,9 +467,21 @@ export async function buildDirectApkFile(
   srcFolder.file('activity_splash.xml', generateActivitySplashXml(config));
   srcFolder.file('themes.xml', generateThemesXml());
 
+  // Inject google-services.json if provided by user
+  if (config.googleServicesJson && config.googleServicesJson.trim()) {
+    const gsContent = config.googleServicesJson.trim();
+    assetsFolder.file('google-services.json', gsContent);
+    assetsFolder.file('web/google-services.json', gsContent);
+    zip.file('google-services.json', gsContent);
+    srcFolder.file('google-services.json', gsContent);
+  }
+
   const resFolder = zip.folder('res')!;
   const rawFolder = resFolder.folder('raw')!;
   rawFolder.file('config.json', generateAppConfigJson(config));
+  if (config.googleServicesJson && config.googleServicesJson.trim()) {
+    rawFolder.file('google_services.json', config.googleServicesJson.trim());
+  }
 
   resFolder.file('drawable/ic_launcher.png', logoBase64, { base64: true });
   resFolder.file('drawable/ic_launcher_round.png', logoBase64, { base64: true });
@@ -529,6 +550,14 @@ export async function buildDirectAabFile(
   srcFolder.file('activity_main.xml', generateActivityMainXml(config));
   srcFolder.file('activity_splash.xml', generateActivitySplashXml(config));
   srcFolder.file('themes.xml', generateThemesXml());
+
+  // Inject google-services.json if provided by user
+  if (config.googleServicesJson && config.googleServicesJson.trim()) {
+    const gsContent = config.googleServicesJson.trim();
+    assetsFolder.file('google-services.json', gsContent);
+    baseFolder.file('google-services.json', gsContent);
+    srcFolder.file('google-services.json', gsContent);
+  }
 
   // If user uploaded a custom keystore file, package it into bundle
   if (config.keystore?.useCustomKeystore && config.keystore.keystoreBase64) {

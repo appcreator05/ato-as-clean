@@ -13,6 +13,7 @@ export interface AppPermissions {
   recordAudio: boolean;
   modifyAudioSettings: boolean;
   vibrate: boolean;
+  postNotifications?: boolean;
 }
 
 export interface AdMobConfig {
@@ -85,6 +86,10 @@ export interface AppConfig {
   // Keystore & Display
   keystore: KeystoreConfig;
   allowZoom: boolean;
+
+  // Google Services & Firebase (google-services.json)
+  googleServicesJson?: string;
+  googleServicesFileName?: string;
 }
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
@@ -143,6 +148,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     recordAudio: false,
     modifyAudioSettings: false,
     vibrate: true,
+    postNotifications: true,
   },
 
   keystore: {
@@ -157,5 +163,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     organization: 'Android Mobile Apps',
   },
   allowZoom: false,
+  googleServicesJson: '',
+  googleServicesFileName: '',
 };
 

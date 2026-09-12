@@ -17,7 +17,7 @@ interface CodeInspectorModalProps {
   config: AppConfig;
 }
 
-type TabType = 'manifest' | 'main' | 'splash' | 'gradle' | 'themes';
+type TabType = 'manifest' | 'main' | 'splash' | 'gradle' | 'themes' | 'google-services';
 
 export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({
   isOpen,
@@ -52,6 +52,10 @@ export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({
     case 'themes':
       codeContent = generateThemesXml();
       fileName = 'res/values/themes.xml';
+      break;
+    case 'google-services':
+      codeContent = config.googleServicesJson || '';
+      fileName = 'google-services.json';
       break;
   }
 
@@ -132,6 +136,18 @@ export const CodeInspectorModal: React.FC<CodeInspectorModalProps> = ({
           >
             themes.xml (No Title / Fullscreen)
           </button>
+          {config.googleServicesJson && (
+            <button
+              onClick={() => setActiveTab('google-services')}
+              className={`px-3 py-2 text-xs font-medium border-b-2 transition whitespace-nowrap ${
+                activeTab === 'google-services'
+                  ? 'border-amber-500 text-amber-400 font-semibold'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              google-services.json
+            </button>
+          )}
         </div>
 
         {/* Toolbar */}
