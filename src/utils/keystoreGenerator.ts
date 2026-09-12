@@ -6,17 +6,17 @@
 import { downloadBlobOrFile } from './fileDownloader';
 
 export function generateStandardJksBuffer(
-  alias: string,
-  storePass: string,
-  keyPass: string,
-  certName: string,
-  orgName: string,
+  alias = 'apkcreator25',
+  storePass = 'apkcreator',
+  keyPass = 'apkcreator',
+  certName = 'Apk Creator 25 Release',
+  orgName = 'Apk Creator 25',
   validityYears = 25
 ): Uint8Array {
-  const safeAlias = alias.trim() || 'releasekey';
+  const safeAlias = alias.trim() || 'apkcreator25';
   const encoder = new TextEncoder();
   const aliasBytes = encoder.encode(safeAlias);
-  const certBytes = encoder.encode(`CN=${certName || 'Developer'}, O=${orgName || 'Studio'}, C=US`);
+  const certBytes = encoder.encode(`CN=${certName || 'Apk Creator 25'}, O=${orgName || 'Apk Creator 25'}, C=US`);
 
   // JKS File Structure:
   // Magic (4 bytes): 0xfe 0xed 0xfe 0xed

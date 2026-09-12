@@ -424,7 +424,7 @@ async function startServer() {
       return res
         .status(404)
         .send(
-          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Download Expired</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:sans-serif;text-align:center;padding:40px;background:#0f172a;color:#e2e8f0;"><h2>ডাউনলোড লিংকটি পাওয়া যায়নি বা মেয়াদোত্তীর্ণ হয়েছে</h2><p>অনুগ্রহ করে অ্যাপে ফিরে এসে আবার "Download" বাটনে ক্লিক করুন।</p></body></html>'
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Download Expired</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:sans-serif;text-align:center;padding:40px;background:#0f172a;color:#e2e8f0;"><h2>Download link was not found or has expired</h2><p>Please return to the app and click the "Download" button again.</p></body></html>'
         );
     }
 

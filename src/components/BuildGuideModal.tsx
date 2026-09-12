@@ -34,29 +34,29 @@ export const BuildGuideModal: React.FC<BuildGuideModalProps> = ({ isOpen, onClos
           <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-4 space-y-2">
             <h4 className="text-sm font-bold text-emerald-300 flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-emerald-400" />
-              সরাসরি .APK / .AAB ডাউনলোড (Direct One-Click Download)
+              Direct .APK / .AAB Download (One-Click)
             </h4>
             <p className="text-xs text-emerald-200/90 leading-relaxed">
-              আপনি যদি কোনো ZIP ফাইল বা অ্যান্ড্রয়েড স্টুডিও ছাড়া সরাসরি মোবাইলে ইনস্টল করতে চান, তবে মূল পেইজের{' '}
-              <strong className="text-white font-mono">"Download Direct APK (.apk)"</strong> বাটনে ক্লিক করুন।
+              To install directly on your phone without Android Studio or extracting ZIPs, click the{' '}
+              <strong className="text-white font-mono">"Download Direct APK (.apk)"</strong> button on the main page.
             </p>
             <ul className="list-disc list-inside text-xs text-emerald-200/90 space-y-1 pl-2">
-              <li>কোনো ZIP ফাইল ডাউনলোড হবে না — সরাসরি <code className="bg-emerald-900/60 px-1 py-0.5 rounded text-white font-mono">.apk</code> ফাইল ডাউনলোড হবে।</li>
-              <li>প্লে-স্টোরের জন্য প্রয়োজন হলে <strong className="text-purple-300 font-mono">.AAB</strong> ফরম্যাট ডাউনলোড করতে পারবেন।</li>
-              <li>মোবাইল ডাউনলোডের পর নোটিফিকেশন থেকে ট্যাপ করে "Install" দিন। "Install unknown apps" আসলে Allow দিন।</li>
+              <li>Downloads directly as a signed <code className="bg-emerald-900/60 px-1 py-0.5 rounded text-white font-mono">.apk</code> package.</li>
+              <li>For Google Play Store submission, select <strong className="text-purple-300 font-mono">.AAB</strong> bundle format.</li>
+              <li>After downloading on your device, tap the notification to install. If prompted for "Install unknown apps", tap Allow.</li>
             </ul>
           </div>
 
-          {/* Bengali Quick Guide for Developers */}
+          {/* Developer Quick Guide */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4">
             <h4 className="text-sm font-bold text-slate-200 mb-2 flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-cyan-400" />
-              ডেভেলপার সোর্স কোড (Android Studio Project ZIP)
+              Developer Source Code (Android Studio Project ZIP)
             </h4>
             <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-300 leading-relaxed">
-              <li>যদি সম্পূর্ণ সোর্স কোড মডিফাই করতে চান, তবে <strong>"Source ZIP"</strong> বাটনে ক্লিক করুন।</li>
-              <li>জিপ ফাইলটি আনজিপ করুন এবং <strong>Android Studio</strong> দিয়ে ফোল্ডারটি ওপেন করুন।</li>
-              <li>গ্র্যাডেল সিঙ্ক হওয়ার পর <strong>Build &gt; Build Bundle(s) / APK(s) &gt; Build APK(s)</strong> এ ক্লিক করুন।</li>
+              <li>To modify full native Kotlin code, click the <strong>"Source ZIP"</strong> button.</li>
+              <li>Extract the ZIP archive and open the folder in <strong>Android Studio</strong>.</li>
+              <li>Always build a <strong>Release APK / AAB</strong> so Google AdMob and Start.io display <strong>Real Production Ads</strong> instead of test ads.</li>
             </ol>
           </div>
 
@@ -76,10 +76,13 @@ export const BuildGuideModal: React.FC<BuildGuideModalProps> = ({ isOpen, onClos
                 <strong>Step 2:</strong> In Android Studio, select <em>File &gt; Open...</em> and select the extracted folder.
               </p>
               <p>
-                <strong>Step 3:</strong> Click <em>Build &gt; Build Bundle(s) / APK(s) &gt; Build APK(s)</em>.
+                <strong>Step 3:</strong> Click <em>Build &gt; Generate Signed Bundle / APK</em> (or <em>Build &gt; Build Bundle(s) / APK(s)</em>).
               </p>
               <p>
-                <strong>Step 4:</strong> Android Studio will compile your APK and show a "locate" link in the bottom-right corner.
+                <strong>Step 4:</strong> Select <strong>APK</strong> or <strong>Android App Bundle (.aab)</strong>, choose the <strong>release</strong> build variant, and use the included <code className="text-emerald-400">app/release.keystore</code>.
+              </p>
+              <p>
+                <strong>Step 5:</strong> Android Studio compiles your signed Release APK/AAB with real live ads enabled!
               </p>
             </div>
           </div>
@@ -93,30 +96,42 @@ export const BuildGuideModal: React.FC<BuildGuideModalProps> = ({ isOpen, onClos
               Command Line (Terminal / Mac / Linux / Windows)
             </h4>
             <p className="text-xs text-slate-400">
-              In your project folder terminal, execute:
+              To build a signed Release package with <strong>Real Ads</strong>, run:
             </p>
-            <div className="bg-black/80 rounded-lg p-3 font-mono text-xs text-emerald-400 border border-slate-800">
-              <code>./gradlew assembleDebug</code>
+            <div className="space-y-2">
+              <div className="bg-black/80 rounded-lg p-3 font-mono text-xs text-emerald-400 border border-slate-800">
+                <span className="text-slate-500 block"># 1. Build Signed Release APK (for Real Ads & Direct Install):</span>
+                <code>./gradlew assembleRelease</code>
+                <span className="text-slate-500 block text-[11px] mt-1">Output: app/build/outputs/apk/release/app-release.apk</span>
+              </div>
+              <div className="bg-black/80 rounded-lg p-3 font-mono text-xs text-purple-300 border border-slate-800">
+                <span className="text-slate-500 block"># 2. Build Signed Release AAB (for Google Play Store):</span>
+                <code>./gradlew bundleRelease</code>
+                <span className="text-slate-500 block text-[11px] mt-1">Output: app/build/outputs/bundle/release/app-release.aab</span>
+              </div>
             </div>
-            <p className="text-xs text-slate-500">
-              Output will be generated at: <code className="text-slate-300">app/build/outputs/apk/debug/app-debug.apk</code>
+            <p className="text-xs text-slate-400">
+              <em>Note for Windows:</em> Use <code className="text-slate-200">gradlew.bat assembleRelease</code> or <code className="text-slate-200">gradlew.bat bundleRelease</code>.
             </p>
           </div>
 
           {/* AdMob & Start.io Notice */}
-          <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 text-xs text-amber-200/90 space-y-1.5">
-            <h5 className="font-semibold text-amber-300 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              Important Notes on Ads (AdMob & Start.io):
+          <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-4 text-xs text-amber-200/95 space-y-2">
+            <h5 className="font-semibold text-amber-300 flex items-center gap-1.5 text-sm">
+              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              Important: Real Ads vs Test Ads (AdMob & Start.io)
             </h5>
             <p>
-              - When testing your APK during development, always use Test Ad IDs to avoid account policy violations.
+              • <strong>Why Release Build is Required:</strong> Google Mobile Ads (AdMob) and Start.io automatically recognize <code>assembleDebug</code> as a test build, restricting impressions to test ads.
             </p>
             <p>
-              - For <strong>Google AdMob</strong>: Ensure your AdMob App ID is verified in your Google AdMob console.
+              • <strong>Real Ads Activation:</strong> Building with <code>./gradlew assembleRelease</code> or <code>./gradlew bundleRelease</code> marks the package as production-signed, activating <strong>Real Live Ads</strong> with your real Ad Unit IDs.
             </p>
             <p>
-              - For <strong>Start.io</strong>: Ensure your Start.io App ID is active in your Start.io developer dashboard.
+              • <strong>Google AdMob:</strong> Make sure your AdMob App ID and Ad Units are verified and active in the Google AdMob dashboard.
+            </p>
+            <p>
+              • <strong>Start.io:</strong> Ensure your Start.io App ID is active in your Start.io developer console.
             </p>
           </div>
         </div>

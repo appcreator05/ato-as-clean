@@ -13,11 +13,22 @@ import {
 } from './codeGenerator';
 import { getImageBase64 } from './apkBuilder';
 import { resizeLogoTo512, resizeSplashTo1080x1920 } from './imageResizer';
+import { generateStandardJksBuffer } from './keystoreGenerator';
 
 const DEFAULT_ICON_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAiSURBVHhe7cExAQAAAMKg9U9tCF8gAAAAAAAAAAAAAAAAPgYY3AAB3Kq0HQAAAABJRU5ErkJggg==';
 
-export async function exportAndroidProjectZip(config: AppConfig): Promise<Blob> {
+export async function exportAndroidProjectZip(rawConfig: AppConfig): Promise<Blob> {
+  const safeAppName = rawConfig.appName?.trim() || 'Apk Creator 25';
+  const safePackageName = rawConfig.packageName?.trim() || 'com.apkcreator25.app';
+  const safeWebsiteUrl = rawConfig.websiteUrl?.trim() || 'https://yourwebsite.com';
+  const config: AppConfig = {
+    ...rawConfig,
+    appName: safeAppName,
+    packageName: safePackageName,
+    websiteUrl: safeWebsiteUrl,
+  };
+
   const zip = new JSZip();
   const packagePath = config.packageName.replace(/\./g, '/');
 
@@ -101,16 +112,18 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build Debug APK
+      - name: Build Release APK & AAB Bundle
         run: |
           chmod +x ./gradlew || true
-          ./gradlew assembleDebug --no-daemon --stacktrace || gradle assembleDebug
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace || ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK
+      - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${config.appName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: ${config.appName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')}-release-builds
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
           retention-days: 30
 `
   );
@@ -118,6 +131,36 @@ jobs:
   // App module
   const appFolder = zip.folder('app')!;
   appFolder.file('build.gradle.kts', generateBuildGradle(config));
+
+  // Release Keystore for production signing & Real Ads (Google AdMob / Start.io)
+  if (config.keystore?.useCustomKeystore && config.keystore.keystoreBase64) {
+    try {
+      const rawB64 = config.keystore.keystoreBase64.includes(',')
+        ? config.keystore.keystoreBase64.split(',')[1]
+        : config.keystore.keystoreBase64;
+      const binStr = atob(rawB64);
+      const bytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) {
+        bytes[i] = binStr.charCodeAt(i);
+      }
+      appFolder.file(config.keystore.keystoreFileName || 'release.keystore', bytes);
+    } catch {
+      // fallback to generated keystore if custom base64 fails
+      const defaultAlias = config.keystore?.keyAlias || 'apkcreator25';
+      const defaultPass = config.keystore?.storePassword || 'apkcreator';
+      const defaultKeyPass = config.keystore?.keyPassword || defaultPass;
+      const defaultJks = generateStandardJksBuffer(defaultAlias, defaultPass, defaultKeyPass, config.appName, 'Apk Creator 25');
+      appFolder.file('release.keystore', defaultJks);
+    }
+  } else {
+    // Generate valid release keystore automatically
+    const defaultAlias = config.keystore?.keyAlias || 'apkcreator25';
+    const defaultPass = config.keystore?.storePassword || 'apkcreator';
+    const defaultKeyPass = config.keystore?.keyPassword || defaultPass;
+    const defaultJks = generateStandardJksBuffer(defaultAlias, defaultPass, defaultKeyPass, config.appName, 'Apk Creator 25');
+    appFolder.file('release.keystore', defaultJks);
+  }
+
   if (config.googleServicesJson && config.googleServicesJson.trim()) {
     appFolder.file('google-services.json', config.googleServicesJson.trim());
   }
@@ -289,34 +332,41 @@ ${
 
 ---
 
-## How to Build the APK (Easy 3-Step Guide)
+## How to Build the Release APK & AAB (for Real Ads & Production)
 
-### Method 1: Using Android Studio (Recommended)
-1. Extract this ZIP file onto your computer.
-2. Open **Android Studio**, click **Open Project**, and select this extracted folder.
-3. Wait for Gradle Sync to complete (1-2 minutes).
-4. Go to top menu: **Build** -> **Build Bundle(s) / APK(s)** -> **Build APK(s)**.
-5. Once finished, click **locate** in the bottom-right balloon to get your debug/release APK!
+> **Important for Real Ads (Google AdMob & Start.io)**: 
+> Always build a **Release APK** (\`./gradlew assembleRelease\`) or **Release AAB Bundle** (\`./gradlew bundleRelease\`). Debug builds (\`assembleDebug\`) will only display test ads. Release builds use the included production keystore and serve live, revenue-generating ads!
 
-### Method 2: Command Line (Fastest)
+### Method 1: Command Line (Fastest & Recommended)
 Run in the project directory:
 \`\`\`bash
-# Linux / macOS
-./gradlew assembleDebug
+# Linux / macOS:
+# 1. Build Signed Release APK (for Direct Phone Installation & Real Ads):
+./gradlew assembleRelease
 
-# Windows
-gradlew.bat assembleDebug
+# 2. Build Signed Release AAB Bundle (for Google Play Store Publishing):
+./gradlew bundleRelease
+
+# Windows (Command Prompt / PowerShell):
+gradlew.bat assembleRelease
+gradlew.bat bundleRelease
 \`\`\`
-The APK file will be generated at:
-\`app/build/outputs/apk/debug/app-debug.apk\`
+
+The generated files:
+- **Signed Release APK**: \`app/build/outputs/apk/release/app-release.apk\`
+- **Signed Release AAB Bundle**: \`app/build/outputs/bundle/release/app-release.aab\`
 
 ---
 
-## বাংলা নির্দেশিকা (Bengali Instructions)
-১. এই জিপ (ZIP) ফাইলটি আপনার কম্পিউটারে আনজিপ / Extract করুন।
-২. **Android Studio** ওপেন করে **Open Project** দিয়ে এই ফোল্ডারটি সিলেক্ট করুন।
-৩. গ্র্যাডেল সিঙ্ক (Gradle Sync) শেষ হলে **Build -> Build Bundle(s) / APK(s) -> Build APK(s)** এ ক্লিক করুন।
-৪. কয়েক সেকেন্ডে আপনার ফুলস্ক্রিন APK তৈরি হয়ে যাবে!
+### Method 2: Using Android Studio (GUI)
+1. Unzip / Extract this ZIP archive to your computer.
+2. Open **Android Studio** and choose **Open**, then select this project folder.
+3. Once Gradle Sync completes:
+   - For Release APK / AAB: Go to **Build -> Generate Signed Bundle / APK**
+   - Select **Android App Bundle (.aab)** for Google Play Store, or **APK (.apk)** for direct installation.
+   - Use the included keystore file: \`app/release.keystore\` (Alias: \`${config.keystore?.keyAlias || 'apkcreator25'}\`, Password: \`${config.keystore?.storePassword || 'apkcreator'}\`).
+   - Select the **release** build variant and click **Finish**.
+4. Your signed production Release APK or AAB with Real Ads will be ready!
 `
   );
 

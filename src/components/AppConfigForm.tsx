@@ -54,6 +54,11 @@ interface AppConfigFormProps {
   onStartIoChange: (updated: Partial<AppConfig['startio']>) => void;
   onKeystoreChange: (updated: Partial<AppConfig['keystore']>) => void;
   onOkAndSave?: () => void;
+  highlightMissing?: {
+    websiteUrl?: boolean;
+    appName?: boolean;
+    packageName?: boolean;
+  };
 }
 
 const PRESET_LOGOS = [
@@ -77,6 +82,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
   onStartIoChange,
   onKeystoreChange,
   onOkAndSave,
+  highlightMissing,
 }) => {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const splashInputRef = useRef<HTMLInputElement>(null);
@@ -125,7 +131,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     const cleanName = config.appName
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '');
-    onChange({ packageName: `com.company.${cleanName || 'app'}` });
+    onChange({ packageName: cleanName ? `com.${cleanName}.app` : 'com.apkcreator25.app' });
   };
 
   // Permission toggle handlers
@@ -212,7 +218,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
   const featureCheckboxes = [
     {
       id: 'textSelection',
-      title: 'Text Selection (টেক্সট সিলেকশন)',
+      title: 'Text Selection',
       desc: 'Allow users to select, highlight, and copy text inside the webview',
       checked: !!config.textSelection,
       toggle: () => onChange({ textSelection: !config.textSelection }),
@@ -220,7 +226,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'saveFormData',
-      title: 'Save Form Data (ফর্ম ডাটা সেভ)',
+      title: 'Save Form Data',
       desc: 'Remember input field data, form submissions, and login cookies',
       checked: !!config.saveFormData,
       toggle: () => onChange({ saveFormData: !config.saveFormData }),
@@ -228,7 +234,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'fullscreenMode',
-      title: 'Full Screen (ফুলস্ক্রিন ইমার্সিভ)',
+      title: 'Full Screen',
       desc: 'Pure fullscreen edge-to-edge mode hiding top status bar and bottom navigation',
       checked: !!config.fullscreenMode,
       toggle: () => onChange({ fullscreenMode: !config.fullscreenMode }),
@@ -236,7 +242,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'confirmOnExit',
-      title: 'Confirm on Exit (ব্যাক প্রস্থান নিশ্চিতকরণ)',
+      title: 'Confirm on Exit',
       desc: 'Show a prompt dialog when user presses back button to prevent accidental exit',
       checked: !!config.confirmOnExit,
       toggle: () => onChange({ confirmOnExit: !config.confirmOnExit }),
@@ -244,7 +250,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'enableGpsPrompt',
-      title: 'Enable GPS Prompt (জিপিএস প্রম্পট)',
+      title: 'Enable GPS Prompt',
       desc: 'Prompts users for location permission whenever website requests geolocation',
       checked: !!config.enableGpsPrompt,
       toggle: () => onChange({ enableGpsPrompt: !config.enableGpsPrompt }),
@@ -252,7 +258,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'pullToRefresh',
-      title: 'Pull to Refresh (সোয়াইপ রিফ্রেশ)',
+      title: 'Pull to Refresh',
       desc: 'Swipe down from the top of the screen to quickly reload the webpage',
       checked: !!config.pullToRefresh,
       toggle: () => onChange({ pullToRefresh: !config.pullToRefresh }),
@@ -260,7 +266,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'deepLinking',
-      title: 'Deep Linking (ডিপ লিঙ্কিং)',
+      title: 'Deep Linking',
       desc: 'Open web links directly in the application with Android intent filters',
       checked: !!config.deepLinking,
       toggle: () => onChange({ deepLinking: !config.deepLinking }),
@@ -268,7 +274,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'showProgressWheel',
-      title: 'Progress Wheel on Loading (লোডিং প্রগ্রেস হুইল)',
+      title: 'Progress Wheel on Loading',
       desc: 'Shows a circular loading spinner while webpage is loading and hides when ready',
       checked: config.showProgressWheel !== false,
       toggle: () => onChange({ showProgressWheel: !config.showProgressWheel }),
@@ -276,7 +282,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'useCustomTabs',
-      title: 'Chrome Custom Tabs (ইন-অ্যাপ ক্রোম কাস্টম ট্যাব)',
+      title: 'Chrome Custom Tabs',
       desc: 'Opens external links smoothly inside Chrome Custom Tabs without breaking webview navigation',
       checked: config.useCustomTabs !== false,
       toggle: () => onChange({ useCustomTabs: !config.useCustomTabs }),
@@ -284,7 +290,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
     },
     {
       id: 'enablePaymentRedirects',
-      title: 'Popup & Wallet Payment Support (পপআপ ও ওয়ালেট পেমেন্ট)',
+      title: 'Popup & Wallet Payment Support',
       desc: 'Enables popups, payment gateways, subscriptions, and wallet apps (bKash, Nagad, UPI, Paytm, GPay) with auto-return to app upon success',
       checked: config.enablePaymentRedirects !== false,
       toggle: () => onChange({ enablePaymentRedirects: !config.enablePaymentRedirects }),
@@ -296,77 +302,66 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
   const permissionsList: {
     key: keyof AppPermissions;
     name: string;
-    bengali: string;
     manifestTag: string;
     desc: string;
   }[] = [
     {
       key: 'internet',
       name: 'Internet',
-      bengali: 'ইন্টারনেট এক্সেস',
       manifestTag: 'android.permission.INTERNET',
       desc: 'Required to load web content and online assets',
     },
     {
       key: 'accessNetworkState',
       name: 'Access Network State',
-      bengali: 'নেটওয়ার্ক স্টেট পর্যবেক্ষণ',
       manifestTag: 'android.permission.ACCESS_NETWORK_STATE',
       desc: 'Detect Wi-Fi, cellular connectivity, and offline state',
     },
     {
       key: 'accessCoarseLocation',
       name: 'Access Coarse Location',
-      bengali: 'কোর্স লোকেশন (সেল/ওয়াইফাই)',
       manifestTag: 'android.permission.ACCESS_COARSE_LOCATION',
       desc: 'Approximate city-level location',
     },
     {
       key: 'accessFineLocation',
       name: 'Access Fine Location',
-      bengali: 'ফাইন জিপিএস লোকেশন',
       manifestTag: 'android.permission.ACCESS_FINE_LOCATION',
       desc: 'Precise satellite GPS coordinates for maps and navigation',
     },
     {
       key: 'camera',
       name: 'Camera',
-      bengali: 'ক্যামেরা এক্সেস',
       manifestTag: 'android.permission.CAMERA',
       desc: 'QR scanner, photo capture, and live camera feed for forms',
     },
     {
       key: 'readExternalStorage',
       name: 'Read External Storage',
-      bengali: 'স্টোরেজ থেকে ফাইল রিড',
       manifestTag: 'android.permission.READ_EXTERNAL_STORAGE',
       desc: 'Select and upload documents, photos, or audio',
     },
     {
       key: 'writeExternalStorage',
       name: 'Write External Storage',
-      bengali: 'স্টোরেজে ফাইল সেভ',
       manifestTag: 'android.permission.WRITE_EXTERNAL_STORAGE',
       desc: 'Save downloaded files and receipts to phone memory',
     },
     {
       key: 'recordAudio',
       name: 'Record Audio & Modify Audio',
-      bengali: 'অডিও রেকর্ড ও সাউন্ড পরিবর্তন',
       manifestTag: 'android.permission.RECORD_AUDIO & MODIFY_AUDIO_SETTINGS',
       desc: 'Voice search, microphone access, and audio volume control',
     },
     {
       key: 'vibrate',
       name: 'Vibrate',
-      bengali: 'ভাইব্রেশন ও হ্যাপটিক',
       manifestTag: 'android.permission.VIBRATE',
       desc: 'Haptic feedback on clicks, alerts, and notifications',
     },
     {
       key: 'postNotifications',
       name: 'Push Notifications',
-      bengali: 'পুশ নোটিফিকেশন ও অ্যালার্ট (Android 13+)',
       manifestTag: 'android.permission.POST_NOTIFICATIONS',
       desc: 'Push alerts, background download progress, and local notification popups',
     },
@@ -383,7 +378,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           <div>
             <h2 className="text-base font-semibold text-white">Website & App Details</h2>
             <p className="text-xs text-slate-400">
-              ওয়েবসাইটের URL, অ্যাপের নাম এবং প্যাকেজ নেম
+              Configure your website URL, application name, and package name
             </p>
           </div>
         </div>
@@ -394,7 +389,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                Website URL (ওয়েবসাইটের লিঙ্ক)
+                Website URL
               </span>
               {isValidUrl ? (
                 <span className="text-[11px] text-emerald-400 flex items-center gap-1">
@@ -408,11 +403,16 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             </label>
             <div className="relative">
               <input
+                id="input-website-url"
                 type="url"
                 value={config.websiteUrl}
                 onChange={(e) => onChange({ websiteUrl: e.target.value })}
                 placeholder="https://yourwebsite.com"
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 transition outline-none"
+                className={`w-full bg-slate-950/80 border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 transition outline-none ${
+                  highlightMissing?.websiteUrl
+                    ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-950/10'
+                    : 'border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                }`}
               />
             </div>
             <p className="text-[11px] text-slate-500 mt-1">
@@ -424,20 +424,25 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                App Name (অ্যাপের নাম)
+                App Name
               </label>
               <input
+                id="input-app-name"
                 type="text"
                 value={config.appName}
                 onChange={(e) => onChange({ appName: e.target.value })}
                 placeholder="e.g. Apk Creator 25"
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 transition outline-none"
+                className={`w-full bg-slate-950/80 border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 transition outline-none ${
+                  highlightMissing?.appName
+                    ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-950/10'
+                    : 'border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                }`}
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
-                <span>Package Name (প্যাকেজ নেম)</span>
+                <span>Package Name</span>
                 <button
                   type="button"
                   onClick={handleAutoDerivePackage}
@@ -447,11 +452,16 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                 </button>
               </label>
               <input
+                id="input-package-name"
                 type="text"
                 value={config.packageName}
                 onChange={(e) => onChange({ packageName: e.target.value })}
-                placeholder="com.company.appname"
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 font-mono transition outline-none"
+                placeholder="com.apkcreator25.app"
+                className={`w-full bg-slate-950/80 border rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 font-mono transition outline-none ${
+                  highlightMissing?.packageName
+                    ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-950/10'
+                    : 'border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'
+                }`}
               />
             </div>
           </div>
@@ -467,7 +477,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           <div>
             <h2 className="text-base font-semibold text-white">App Version & Orientation</h2>
             <p className="text-xs text-slate-400">
-              অ্যাপের ভার্সন এবং স্ক্রিন ওরিয়েন্টেশন নির্ধারণ করুন
+              Set application version code, version name, and display orientation
             </p>
           </div>
         </div>
@@ -478,7 +488,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-blue-400" />
-                Version Name (ভার্সন নেম)
+                Version Name
               </label>
               <input
                 type="text"
@@ -495,7 +505,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
                 <Hash className="w-3.5 h-3.5 text-blue-400" />
-                Version Code (ভার্সন কোড)
+                Version Code
               </label>
               <input
                 type="number"
@@ -540,25 +550,25 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           {/* Screen Orientation Selector */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-2">
-              Screen Orientation (অ্যাপ ওরিয়েন্টেশন)
+              Screen Orientation
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 {
                   id: 'auto_rotate' as AppOrientation,
-                  label: 'Auto Rotate (অটো রোটেট)',
+                  label: 'Auto Rotate',
                   desc: 'Rotates with device sensor dynamically',
                   icon: RotateCw,
                 },
                 {
                   id: 'portrait' as AppOrientation,
-                  label: 'Portrait (পোর্ট্রেট)',
+                  label: 'Portrait',
                   desc: 'Fixed vertical orientation for phones',
                   icon: Smartphone,
                 },
                 {
                   id: 'landscape' as AppOrientation,
-                  label: 'Landscape (ল্যান্ডস্কেপ)',
+                  label: 'Landscape',
                   desc: 'Fixed horizontal orientation for media',
                   icon: Monitor,
                 },
@@ -608,7 +618,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           <div>
             <h2 className="text-base font-semibold text-white">App Logo & Splash Screen</h2>
             <p className="text-xs text-slate-400">
-              অ্যাপের আইকন ও স্প্ল্যাশ ইমেজ আপলোড করুন বা সিলেক্ট করুন
+              Upload custom app icon and splash screen image
             </p>
           </div>
         </div>
@@ -618,7 +628,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-slate-300">
-                App Launcher Icon (অ্যাপ আইকন)
+                App Launcher Icon
               </label>
               <button
                 type="button"
@@ -685,7 +695,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-slate-300">
-                Splash Screen Image (স্প্ল্যাশ স্ক্রিন)
+                Splash Screen Image
               </label>
               <button
                 type="button"
@@ -769,7 +779,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
         </div>
       </div>
 
-      {/* 4. Feature Tickmark Options (ইউজার নিজের অ্যাপে যা যা চাই টিকমার্ক দিয়ে বেছে নিতে পারবে) */}
+      {/* 4. Feature Tickmark Options (Users can toggle features they want in their app) */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
@@ -777,10 +787,10 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           </div>
           <div>
             <h2 className="text-base font-semibold text-white">
-              App Features Selection (টিকমার্ক অপশনস)
+              App Features Selection
             </h2>
             <p className="text-xs text-slate-400">
-              অ্যাপের প্রয়োজনীয় সুবিধাসমূহ টিকমার্ক দিয়ে অন বা অফ রাখুন
+              Toggle essential WebView and native features on or off
             </p>
           </div>
         </div>
@@ -828,16 +838,16 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
         </div>
       </div>
 
-      {/* 5. Cache Mode Options (ক্যাশ মোড অপশন) */}
+      {/* 5. Cache Mode Options */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">
             5
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white">Cache Mode Options (ক্যাশ মোড)</h2>
+            <h2 className="text-base font-semibold text-white">Cache Mode Options</h2>
             <p className="text-xs text-slate-400">
-              অ্যাপের ব্রাউজিং স্পিড ও ডেটা সেভিং মোড সিলেক্ট করুন
+              Select web browsing cache strategy and offline performance mode
             </p>
           </div>
         </div>
@@ -846,19 +856,19 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           {[
             {
               id: 'no_cache' as CacheMode,
-              title: 'No Cache (নো ক্যাশ)',
+              title: 'No Cache',
               desc: 'LOAD_NO_CACHE: Always fetches live online data directly. Never uses cache.',
               badge: 'Live Data',
             },
             {
               id: 'default_cache' as CacheMode,
-              title: 'Default Cache (ডিফল্ট ক্যাশ)',
+              title: 'Default Cache',
               desc: 'LOAD_DEFAULT: Standard browser caching with normal asset revalidation.',
               badge: 'Recommended',
             },
             {
               id: 'highly_cached' as CacheMode,
-              title: 'Highly Cached (হাইলি ক্যাশড)',
+              title: 'Highly Cached',
               desc: 'LOAD_CACHE_ELSE_NETWORK: Fast offline loading, uses cache if available.',
               badge: 'Fast & Offline',
             },
@@ -923,7 +933,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                 Ads Monetization & Interstitial Frequency
               </h2>
               <p className="text-xs text-slate-400">
-                গুগল অ্যাডমব বা স্টার্ট.আইও অ্যাডস এবং ইন্টারস্টিশিয়াল অ্যাড ইন্টারভ্যাল
+                Configure Google AdMob or Start.io ads and interstitial ad interval
               </p>
             </div>
           </div>
@@ -971,13 +981,13 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
           </button>
         </div>
 
-        {/* Interstitial Interval Frequency - Requested explicitly by user: "interstitial ta koto minute por por shhow hobe" */}
+        {/* Interstitial Interval Frequency */}
         {config.adNetwork !== 'none' && (
           <div className="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 mb-5 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-amber-400" />
-                Interstitial Ad Interval (ইন্টারস্টিশিয়াল অ্যাড কতো মিনিট পর পর শো হবে):
+                Interstitial Ad Interval (Frequency):
               </label>
               <span className="px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold">
                 Every {config.interstitialIntervalMinutes || 3} Minutes
@@ -1017,7 +1027,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
               <div>
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-semibold text-emerald-200 text-sm">
-                    100% Real Live Ads Mode (কোনো ডেমো বিজ্ঞাপন নয়)
+                    100% Real Live Ads Mode (No Demo / Test Ads)
                   </span>
                   <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-mono font-semibold border border-emerald-500/40">
                     GMA Next-Gen SDK
@@ -1027,7 +1037,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                   </span>
                 </div>
                 <p className="text-[11px] text-emerald-300/80 leading-relaxed">
-                  লেটেস্ট Google Mobile Ads (GMA) Next-Gen SDK যুক্ত করা হয়েছে। টেস্ট বা ডেমো মোড সম্পূর্ণ নিষ্ক্রিয় — আপনার অফিসিয়াল AdMob App ID ও Unit ID গুলো নিচে দিন। বিজ্ঞাপন তাৎক্ষণিকভাবে লাইভ শো হবে।
+                  Configured with Google Mobile Ads (GMA) Next-Gen SDK. Demo / test mode is disabled — enter your official AdMob App ID and Unit IDs below for live ad impressions.
                 </p>
               </div>
             </div>
@@ -1035,7 +1045,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             {/* 1. App ID */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                1. AdMob App ID (অ্যাপ আইডি)
+                1. AdMob App ID
               </label>
               <input
                 type="text"
@@ -1052,7 +1062,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             {/* 2. Banner Ad ID */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                2. Banner Ad ID (ব্যানার অ্যাড আইডি)
+                2. Banner Ad ID
               </label>
               <input
                 type="text"
@@ -1069,7 +1079,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             {/* 3. Interstitial Ad ID */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                3. Interstitial Ad ID (ইন্টারস্টিশিয়াল অ্যাড আইডি)
+                3. Interstitial Ad ID
               </label>
               <input
                 type="text"
@@ -1086,7 +1096,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             {/* 4. Rewarded Ad ID */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                4. Rewarded Ad ID (রিওয়ার্ড অ্যাড আইডি)
+                4. Rewarded Ad ID
               </label>
               <input
                 type="text"
@@ -1110,7 +1120,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
               <div>
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-semibold text-cyan-200 text-sm">
-                    100% Real Live Ads Mode (Start.io রিয়েল অ্যাডস চালু)
+                    100% Real Live Ads Mode (Start.io Enabled)
                   </span>
                   <span className="bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded text-[10px] font-mono font-semibold border border-cyan-500/40">
                     SDK 5.1.0
@@ -1120,7 +1130,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                   </span>
                 </div>
                 <p className="text-[11px] text-cyan-300/80 leading-relaxed">
-                  স্টার্ট.আইও ইন-অ্যাপ SDK 5.1.0 (<code className="font-mono text-cyan-200">com.startapp:inapp-sdk:5.1.0</code>) কনফিগার করা রয়েছে। টেস্ট মোড বন্ধ — আপনার অফিসিয়াল Start.io App ID দিন এবং নিচের ৩টি ফরম্যাট থেকে বেছে নিন।
+                  Configured with Start.io In-App SDK 5.1.0 (<code className="font-mono text-cyan-200">com.startapp:inapp-sdk:5.1.0</code>). Test mode is disabled — enter your official Start.io App ID and choose the formats below.
                 </p>
               </div>
             </div>
@@ -1128,7 +1138,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             {/* Start.io App ID */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1">
-                Start.io App ID (স্টার্ট.আইও অ্যাডস আইডি)
+                Start.io App ID
               </label>
               <input
                 type="text"
@@ -1145,7 +1155,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             {/* 3 Tick Marks for Start.io Ad Formats */}
             <div className="bg-slate-950/90 border border-slate-800/80 rounded-xl p-4 space-y-3">
               <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider">
-                Select Active Ads (টিক মার্ক দিন যা যা শো হবে):
+                Select Active Ads:
               </label>
 
               {/* Tick 1: Banner */}
@@ -1166,7 +1176,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-medium text-white block">
-                      1. Banner Ad (ব্যানার অ্যাড)
+                      1. Banner Ad
                     </span>
                     <span className="text-xs text-slate-400">
                       Shows bottom sticky banner advertisement
@@ -1202,7 +1212,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-medium text-white block">
-                      2. Interstitial Ad (ইন্টারস্টিশিয়াল অ্যাড)
+                      2. Interstitial Ad
                     </span>
                     <span className="text-xs text-slate-400">
                       Shows full-screen automatic interstitial
@@ -1238,7 +1248,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                   </div>
                   <div>
                     <span className="text-sm font-medium text-white block">
-                      3. Rewarded Ad (রিওয়ার্ড অ্যাড)
+                      3. Rewarded Ad
                     </span>
                     <span className="text-xs text-slate-400">
                       Shows rewarded video ad with user bonus callback
@@ -1267,7 +1277,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
         )}
       </div>
 
-      {/* 7. Customizable Android Permissions (কাস্টমাইজ পারমিশনস - টিকমার্ক অপশনস) */}
+      {/* 7. Customizable Android Permissions */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -1276,10 +1286,10 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             </div>
             <div>
               <h2 className="text-base font-semibold text-white">
-                Customize Permissions (কাস্টমাইজ পারমিশনস)
+                Customize Permissions
               </h2>
               <p className="text-xs text-slate-400">
-                অ্যাপের প্রয়োজনীয় অ্যান্ড্রয়েড পারমিশন সিলেক্ট করুন (APK ও AAB উভয় বিল্ডেই প্রযোজ্য)
+                Select required Android permissions (applied directly to both APK and AAB builds)
               </p>
             </div>
           </div>
@@ -1301,21 +1311,21 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
             onClick={handleSelectRecommendedPermissions}
             className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
           >
-            Recommended (প্রস্তাবিত)
+            Recommended
           </button>
           <button
             type="button"
             onClick={handleSelectAllPermissions}
             className="text-[11px] px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition"
           >
-            Select All (সব সিলেক্ট)
+            Select All
           </button>
           <button
             type="button"
             onClick={handleClearAllPermissions}
             className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 transition"
           >
-            Clear All (সব বাতিল)
+            Clear All
           </button>
         </div>
 
@@ -1356,7 +1366,6 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
                       {isChecked ? 'ON' : 'OFF'}
                     </span>
                   </div>
-                  <span className="text-[10px] text-rose-300/80 block mt-0.5">{perm.bengali}</span>
                   <p className="text-[10px] text-slate-400 mt-1 leading-tight">{perm.desc}</p>
                   <code className="text-[9px] text-slate-500 block mt-1.5 font-mono truncate">
                     {perm.manifestTag}
@@ -1370,7 +1379,7 @@ export const AppConfigForm: React.FC<AppConfigFormProps> = ({
         <div className="mt-4 p-3 bg-slate-950/40 border border-slate-800/80 rounded-xl flex items-center justify-between text-[11px] text-slate-400">
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            নির্বাচিত পারমিশনগুলো APK এবং AAB উভয় প্যাকেজের AndroidManifest.xml-এ সরাসরি অন্তর্ভুক্ত করা হবে এবং রানটাইমে এক্টিভ থাকবে।
+            Selected permissions will be included directly in AndroidManifest.xml for both APK and AAB builds and remain active at runtime.
           </span>
         </div>
       </div>

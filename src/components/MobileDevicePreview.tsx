@@ -301,14 +301,26 @@ export const MobileDevicePreview: React.FC<MobileDevicePreviewProps> = ({ config
 
             {/* Edge to Edge Web Content */}
             <div className="flex-1 w-full h-full relative overflow-hidden bg-slate-900">
-              <iframe
-                key={iframeKey}
-                src={config.websiteUrl}
-                title="Fullscreen App View"
-                className="w-full h-full border-0 bg-white"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-                onError={() => setIframeError(true)}
-              />
+              {!config.websiteUrl ? (
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-slate-950 text-slate-400">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+                    <ExternalLink className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-white">Enter Website URL</h4>
+                  <p className="text-xs text-slate-400 mt-1 max-w-[220px]">
+                    Type your website address on the left to preview your live mobile app here.
+                  </p>
+                </div>
+              ) : (
+                <iframe
+                  key={iframeKey}
+                  src={config.websiteUrl}
+                  title="Fullscreen App View"
+                  className="w-full h-full border-0 bg-white"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  onError={() => setIframeError(true)}
+                />
+              )}
 
               {/* Circular Progress Wheel (Requested: page loading holei show hoye ar page load hoye gele sore jaye) */}
               {isPageLoading && config.showProgressWheel !== false && (
@@ -551,7 +563,7 @@ export const MobileDevicePreview: React.FC<MobileDevicePreviewProps> = ({ config
                     <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-left">
                       <div className="text-[11px] text-slate-400">Subscription Item:</div>
                       <div className="text-sm font-semibold text-white">Monthly VIP Membership</div>
-                      <div className="text-xs font-mono text-emerald-400 mt-0.5">$9.99 / ৳1,050</div>
+                      <div className="text-xs font-mono text-emerald-400 mt-0.5">$9.99 / month</div>
                     </div>
 
                     <div className="text-[11px] text-slate-400 text-left">

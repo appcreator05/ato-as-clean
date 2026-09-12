@@ -865,7 +865,7 @@ ${
                     } catch (err: Exception) {
                         Toast.makeText(
                             this@MainActivity,
-                            "ফাইলটি আপনার ফোনের Internal Storage > Download ফোল্ডারে সংরক্ষিত আছে",
+                            "File saved in your phone's Internal Storage > Download folder",
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -1457,10 +1457,17 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("${config.keystore?.useCustomKeystore && config.keystore.keystoreFileName ? config.keystore.keystoreFileName : "release.keystore"}")
-            storePassword = "${config.keystore?.storePassword || "release_pass_123"}"
-            keyAlias = "${config.keystore?.keyAlias || "release_alias"}"
-            keyPassword = "${config.keystore?.keyPassword || "release_pass_123"}"
+            val ksName = "${config.keystore?.useCustomKeystore && config.keystore.keystoreFileName ? config.keystore.keystoreFileName : "release.keystore"}"
+            val ksFile = file(ksName)
+            if (ksFile.exists()) {
+                storeFile = ksFile
+                storePassword = "${config.keystore?.storePassword || "apkcreator"}"
+                keyAlias = "${config.keystore?.keyAlias || "apkcreator25"}"
+                keyPassword = "${config.keystore?.keyPassword || config.keystore?.storePassword || "apkcreator"}"
+            } else {
+                // Safe fallback to debug signature if custom keystore was moved
+                initWith(signingConfigs.getByName("debug"))
+            }
             v1SigningEnabled = true
             v2SigningEnabled = true
             v3SigningEnabled = true
@@ -1470,12 +1477,15 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

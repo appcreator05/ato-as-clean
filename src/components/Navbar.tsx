@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smartphone, Code2, HelpCircle, Sparkles, Layers, Github } from 'lucide-react';
+import { Smartphone, HelpCircle, Sparkles, Globe } from 'lucide-react';
 import { AppConfig } from '../types';
 
 interface NavbarProps {
@@ -7,9 +7,11 @@ interface NavbarProps {
   onOpenApkModal: (format?: 'apk' | 'aab') => void;
   onDownloadZip: () => void;
   isDownloading: boolean;
-  onOpenCodeModal: () => void;
+  onOpenCodeModal?: () => void;
   onOpenGuideModal: () => void;
-  onOpenGitHubModal: () => void;
+  onOpenGitHubModal?: () => void;
+  onOpenTranslateModal: () => void;
+  currentLang?: string;
   onLoadPreset: (presetName: string) => void;
 }
 
@@ -21,6 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCodeModal,
   onOpenGuideModal,
   onOpenGitHubModal,
+  onOpenTranslateModal,
+  currentLang = 'en',
   onLoadPreset,
 }) => {
   return (
@@ -74,47 +78,31 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* GitHub APK Build & Mobile Install Button */}
+          {/* Translate Button - text stays "Translate" and never changes when language changes */}
           <button
             type="button"
-            onClick={onOpenGitHubModal}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-purple-200 bg-purple-950/70 hover:bg-purple-900/90 border border-purple-600/50 rounded-lg shadow-sm transition cursor-pointer"
-            title="Build this APK Creator app via GitHub Actions or Install on Phone"
+            onClick={onOpenTranslateModal}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-purple-200 bg-purple-950/70 hover:bg-purple-900/90 border border-purple-600/50 rounded-lg shadow-sm transition cursor-pointer notranslate"
+            title="Translate Language / ভাষা পরিবর্তন করুন"
+            translate="no"
           >
-            <Github className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-            <span className="hidden sm:inline">Build via GitHub</span>
-            <span className="sm:hidden text-[11px]">GitHub</span>
+            <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0 notranslate" />
+            <span className="notranslate" translate="no">Translate</span>
+            {currentLang && currentLang !== 'en' && (
+              <span className="px-1 py-0.2 bg-purple-500/30 text-purple-300 rounded text-[10px] uppercase font-bold notranslate" translate="no">
+                {currentLang}
+              </span>
+            )}
           </button>
 
           <button
             type="button"
             onClick={onOpenGuideModal}
-            className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-lg transition"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-lg transition"
             title="How to build APK"
           >
             <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
             <span>Guide</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenCodeModal}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-lg transition"
-            title="Inspect Android code"
-          >
-            <Code2 className="w-3.5 h-3.5 text-slate-400" />
-            <span>View Source</span>
-          </button>
-
-          {/* Direct AAB Button */}
-          <button
-            type="button"
-            onClick={() => onOpenApkModal('aab')}
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-200 bg-purple-950/60 hover:bg-purple-900/80 border border-purple-700/50 rounded-lg transition"
-            title="Download Google Play Store AAB Bundle"
-          >
-            <Layers className="w-3.5 h-3.5 text-purple-400" />
-            <span>.AAB Bundle</span>
           </button>
         </div>
       </div>

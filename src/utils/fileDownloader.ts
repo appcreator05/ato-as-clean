@@ -445,7 +445,7 @@ export async function shareToWhatsApp(
       return {
         success: true,
         method: 'native_android',
-        message: 'WhatsApp খোলা হচ্ছে, সরাসরি ফাইল (Document) হিসেবে পাঠিয়ে দিন...',
+        message: 'Opening WhatsApp, send file directly as Document...',
       };
     } catch (e) {
       console.warn('Native Android WhatsApp share failed:', e);
@@ -467,7 +467,7 @@ export async function shareToWhatsApp(
           return {
             success: true,
             method: 'web_share_files',
-            message: '✅ WhatsApp বা অ্যাপে সরাসরি APK ফাইল শেয়ার সম্পন্ন!',
+            message: '✅ Shared APK file directly to WhatsApp or app!',
           };
         }
       } catch (e: any) {
@@ -475,7 +475,7 @@ export async function shareToWhatsApp(
           return {
             success: false,
             method: 'web_share_files',
-            message: 'শেয়ার বাতিল করা হয়েছে',
+            message: 'Share cancelled',
           };
         }
         console.warn(`Web Share attempt failed with MIME ${testMime}:`, e);
@@ -504,24 +504,24 @@ export async function shareToWhatsApp(
   }
 
   if (validDownloadUrl) {
-    const textMsg = `🚀 *${appName}* Android App Package\n\n📦 ফাইল: *${fileName}*\n\n📥 ডাউনলোড লিংক:\n${validDownloadUrl}\n\n👆 লিঙ্কে ক্লিক করে সরাসরি ফোনে ডাউনলোড ও ইনস্টল করুন!`;
+    const textMsg = `🚀 *${appName}* Android App Package\n\n📦 File: *${fileName}*\n\n📥 Download Link:\n${validDownloadUrl}\n\n👆 Click link to download & install directly on your phone!`;
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(textMsg)}`;
     openInChromeCustomTabs(whatsappUrl);
     return {
       success: true,
       method: 'whatsapp_link',
       downloadUrl: validDownloadUrl,
-      message: 'WhatsApp ওপেন হয়েছে। ফাইলটি ইতিমধ্যেই আপনার Download ফোল্ডারে সেভ হয়েছে, সেখান থেকেও 📎 Document হিসেবে পাঠাতে পারেন!',
+      message: 'WhatsApp opened. The file is also saved in your Downloads folder to attach as 📎 Document!',
     };
   } else {
     // Guide the user to attach the downloaded file in WhatsApp
-    const textMsg = `🚀 *${appName}* Android App Package\n📦 ফাইল: *${fileName}*\n\n✅ অ্যাপ ফাইলটি ডিভাইসের Download ফোল্ডারে সেভ হয়েছে।\n📎 ফাইলটি পাঠাতে: WhatsApp-এ (📎) পেপারক্লিপ আইকন -> Document -> *${fileName}* সিলেক্ট করুন।`;
+    const textMsg = `🚀 *${appName}* Android App Package\n📦 File: *${fileName}*\n\n✅ App file saved in your device Downloads folder.\n📎 To send: In WhatsApp tap Paperclip (📎) -> Document -> Select *${fileName}*.`;
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(textMsg)}`;
     openInChromeCustomTabs(whatsappUrl);
     return {
       success: true,
       method: 'whatsapp_document_guide',
-      message: `${fileName} ডাউনলোড ফোল্ডারে সেভ হয়েছে! WhatsApp-এ 📎 Document থেকে সিলেক্ট করে সরাসরি ফাইল পাঠিয়ে দিন।`,
+      message: `${fileName} saved in Downloads folder! Select and send via WhatsApp 📎 Document.`,
     };
   }
 }

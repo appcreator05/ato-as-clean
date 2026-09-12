@@ -21,9 +21,11 @@ import {
   HardDrive,
   Share2,
   Check,
+  Key,
 } from 'lucide-react';
 import { AppConfig } from '../types';
 import { buildDirectApkFile, buildDirectAabFile } from '../utils/apkBuilder';
+import { generateStandardJksBuffer } from '../utils/keystoreGenerator';
 import {
   uploadBothPackages,
   DualBuildUploadResult,
@@ -60,7 +62,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
 }) => {
   const [stage, setStage] = useState<'loading' | 'completed' | 'error'>('loading');
   const [progressPercent, setProgressPercent] = useState(10);
-  const [progressStatus, setProgressStatus] = useState('অ্যাপ বিল্ড প্রস্তুত হচ্ছে...');
+  const [progressStatus, setProgressStatus] = useState('Preparing app build...');
   const [buildResult, setBuildResult] = useState<DualBuildUploadResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasServerGithub, setHasServerGithub] = useState(false);
@@ -71,7 +73,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
   const [aabPackage, setAabPackage] = useState<{ blob: Blob; fileName: string } | null>(null);
 
   // Sharing & Saving states
-  const [activeTab, setActiveTab] = useState<'apk' | 'aab'>('apk');
+  const [activeTab, setActiveTab] = useState<'apk' | 'aab' | 'keystore'>('apk');
   const [isSharing, setIsSharing] = useState(false);
   const [isSavingFolder, setIsSavingFolder] = useState(false);
   const [isSavingDrive, setIsSavingDrive] = useState(false);
@@ -88,7 +90,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     if (!isOpen) {
       setStage('loading');
       setProgressPercent(10);
-      setProgressStatus('অ্যাপ বিল্ড প্রস্তুত হচ্ছে...');
+      setProgressStatus('Preparing app build...');
       setBuildResult(null);
       setErrorMessage(null);
       setApkPackage(null);
@@ -103,7 +105,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
         setStage('loading');
         setErrorMessage(null);
         setProgressPercent(10);
-        setProgressStatus('অ্যাপ প্যাকেজ প্রস্তুতি শুরু হচ্ছে...');
+        setProgressStatus('Starting app package preparation...');
 
         // Check server github config
         const serverConfig = await checkServerGitHubConfig();
@@ -112,11 +114,11 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
         // 1. Build Direct APK
         if (!isMounted) return;
         setProgressPercent(15);
-        setProgressStatus('১/৩: স্ট্যান্ডঅ্যালোন APK (.apk) তৈরি হচ্ছে...');
+        setProgressStatus('1/3: Building standalone APK (.apk)...');
         const apk = await buildDirectApkFile(config, (percent, status) => {
           if (isMounted) {
             setProgressPercent(Math.min(45, Math.max(15, Math.round(percent * 0.45))));
-            setProgressStatus(`১/৩ APK বিল্ড: ${status}`);
+            setProgressStatus(`1/3 APK build: ${status}`);
           }
         });
         if (isMounted) setApkPackage(apk);
@@ -124,11 +126,11 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
         // 2. Build Direct AAB
         if (!isMounted) return;
         setProgressPercent(50);
-        setProgressStatus('২/৩: গুগল প্লে স্টোর AAB (.aab) তৈরি হচ্ছে...');
+        setProgressStatus('2/3: Building Google Play Store AAB (.aab)...');
         const aab = await buildDirectAabFile(config, (percent, status) => {
           if (isMounted) {
             setProgressPercent(Math.min(80, Math.max(50, Math.round(50 + percent * 0.3))));
-            setProgressStatus(`২/৩ AAB বিল্ড: ${status}`);
+            setProgressStatus(`2/3 AAB build: ${status}`);
           }
         });
         if (isMounted) setAabPackage(aab);
@@ -136,7 +138,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
         // 3. Upload to GitHub Releases (or fast server/cloud fallback)
         if (!isMounted) return;
         setProgressPercent(85);
-        setProgressStatus('৩/৩: ডাউনলোড লিঙ্ক ও প্যাকেজ প্রস্তুত হচ্ছে...');
+        setProgressStatus('3/3: Preparing packages and download links...');
 
         const configCreds = getSavedGitHubConfig();
         const activeToken = githubToken.trim() || configCreds.token;
@@ -148,21 +150,21 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
           { token: activeToken, repo: activeRepo },
           (status) => {
             if (isMounted) {
-              setProgressStatus(`৩/৩: ${status}`);
+              setProgressStatus(`3/3: ${status}`);
             }
           }
         );
 
         if (!isMounted) return;
         setProgressPercent(100);
-        setProgressStatus('সম্পূর্ণ হয়েছে!');
+        setProgressStatus('Completed!');
         setBuildResult(result);
         setStage('completed');
-        onToast('🎉 অ্যাপ সফলভাবে তৈরি ও প্রস্তুত হয়েছে!');
+        onToast('🎉 App generated and ready successfully!');
       } catch (err: any) {
         console.error('Build & Upload failed:', err);
         if (isMounted) {
-          setErrorMessage(err?.message || 'অ্যাপ তৈরি বা আপলোডে সমস্যা হয়েছে।');
+          setErrorMessage(err?.message || 'Error occurred during app build or upload.');
           setStage('error');
         }
       }
@@ -181,7 +183,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     const activeRepo = githubRepo.trim() || configCreds.repo || 'https://github.com/appcreator05/babu3';
 
     if (!activeToken) {
-      onToast('অনুগ্রহ করে আপনার GitHub Personal Access Token দিন');
+      onToast('Please provide your GitHub Personal Access Token');
       return;
     }
     if (!apkPackage) return;
@@ -190,7 +192,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
       saveGitHubConfig({ token: activeToken, repo: activeRepo });
       if (!githubToken) setGithubToken(activeToken);
       if (!githubRepo) setGithubRepo(activeRepo);
-      onToast('🚀 GitHub Releases-এ বাইনারি প্যাকেজ আপলোড হচ্ছে...');
+      onToast('🚀 Uploading binary packages to GitHub Releases...');
       const result = await uploadBothPackages(
         apkPackage,
         aabPackage,
@@ -201,10 +203,10 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
       );
       setBuildResult(result);
       setShowGitHubInput(false);
-      onToast('🎉 GitHub অনলাইন লিঙ্ক তৈরি সম্পন্ন হয়েছে!');
+      onToast('🎉 GitHub online releases link generated successfully!');
     } catch (err: any) {
       console.error('GitHub upload failed:', err);
-      onToast('GitHub আপলোড ব্যর্থ: ' + (err?.message || 'ত্রুটি'));
+      onToast('GitHub upload failed: ' + (err?.message || 'Error'));
     } finally {
       setIsUploadingToGitHub(false);
     }
@@ -240,7 +242,56 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     setAttemptCount((prev) => prev + 1);
   };
 
+  const getKeystorePackage = (): { blob: Blob; fileName: string } => {
+    if (config.keystore?.useCustomKeystore && config.keystore.keystoreBase64) {
+      try {
+        const rawB64 = config.keystore.keystoreBase64.includes(',')
+          ? config.keystore.keystoreBase64.split(',')[1]
+          : config.keystore.keystoreBase64;
+        const binStr = atob(rawB64);
+        const bytes = new Uint8Array(binStr.length);
+        for (let i = 0; i < binStr.length; i++) {
+          bytes[i] = binStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/x-java-keystore' });
+        const fileName = config.keystore.keystoreFileName || 'release.keystore';
+        return { blob, fileName };
+      } catch (e) {
+        console.error('Custom keystore blob parse error, fallback to auto:', e);
+      }
+    }
+
+    const alias = config.keystore?.keyAlias?.trim() || 'apkcreator25';
+    const storePass = config.keystore?.storePassword || 'apkcreator';
+    const keyPass = config.keystore?.keyPassword || storePass || 'apkcreator';
+    const certName = config.keystore?.certificateName?.trim() || config.appName || 'Apk Creator 25 Release';
+    const org = config.keystore?.organization?.trim() || 'Apk Creator 25';
+    const years = config.keystore?.validityYears || 25;
+
+    const buffer = generateStandardJksBuffer(alias, storePass, keyPass, certName, org, years);
+    const safeName = (config.appName || 'apkcreator25').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    const fileName = `${safeName}-release-key.jks`;
+    const blob = new Blob([buffer], { type: 'application/x-java-keystore' });
+    return { blob, fileName };
+  };
+
   const getActivePackageInfo = () => {
+    if (activeTab === 'keystore') {
+      const ks = getKeystorePackage();
+      let effectiveUrl = '';
+      try {
+        effectiveUrl = URL.createObjectURL(ks.blob);
+      } catch (_) {}
+      return {
+        pkg: ks,
+        fileName: ks.fileName,
+        downloadUrl: effectiveUrl,
+        isOnlineUrl: false,
+        mimeType: 'application/x-java-keystore',
+        label: 'Keystore (.jks)',
+      };
+    }
+
     if (activeTab === 'apk') {
       const rawUrl = buildResult?.apk.downloadUrl || '';
       let effectiveUrl = !isAppAssetsOrHashUrl(rawUrl) ? rawUrl : '';
@@ -277,6 +328,17 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     };
   };
 
+  const handleDownloadKeystore = async () => {
+    const ks = getKeystorePackage();
+    try {
+      await downloadBlobOrFile(ks.blob, ks.fileName, 'application/x-java-keystore', true);
+      onToast(`🔑 Downloaded Keystore (${ks.fileName})!`);
+    } catch (err) {
+      console.error('Download keystore error:', err);
+      onToast('Error downloading keystore');
+    }
+  };
+
   // WhatsApp Share Action
   const handleWhatsAppShare = async () => {
     const { pkg, fileName, downloadUrl, mimeType } = getActivePackageInfo();
@@ -292,15 +354,15 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
         );
         onToast(res.message);
       } else if (downloadUrl && isPublicHttpUrl(downloadUrl)) {
-        const msg = `🚀 *${config.appName}* Android App তৈরি সম্পন্ন!\n\n📦 ফাইল: *${fileName}*\n📥 সরাসরি ডাউনলোড লিংক:\n${downloadUrl}\n\n👆 ক্লিক করে ফোনে ডাউনলোড ও ইনস্টল করুন!`;
+        const msg = `🚀 *${config.appName}* Android App Ready!\n\n📦 File: *${fileName}*\n📥 Direct Download Link:\n${downloadUrl}\n\n👆 Click to download and install on your phone!`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
-        onToast('💬 WhatsApp ওপেন হয়েছে!');
+        onToast('💬 WhatsApp opened!');
       } else {
-        onToast('ফাইলটি প্রস্তুত হতে কিছুক্ষণ অপেক্ষা করুন');
+        onToast('Please wait a moment while the file prepares...');
       }
     } catch (err: any) {
       console.error('WhatsApp share error:', err);
-      onToast('WhatsApp শেয়ারে সমস্যা হয়েছে');
+      onToast('Error sharing to WhatsApp');
     } finally {
       setIsSharing(false);
     }
@@ -315,16 +377,16 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
       const res = await saveFileToDeviceFolder(pkg.blob, fileName, mimeType);
       if (res.success) {
         if (res.method === 'picker') {
-          onToast('✅ ফোল্ডারে ফাইলটি সফলভাবে সেভ হয়েছে!');
+          onToast('✅ File saved to folder successfully!');
         } else {
-          onToast('✅ ফাইলটি ডাউনলোড শুরু হয়েছে!');
+          onToast('✅ File download started!');
         }
       } else if (res.error !== 'User cancelled folder selection') {
-        onToast('ফাইল সেভ ত্রুটি: ' + (res.error || 'ত্রুটি'));
+        onToast('File save error: ' + (res.error || 'Error'));
       }
     } catch (err: any) {
       console.error('Save to folder error:', err);
-      onToast('ফোল্ডারে সেভ ব্যর্থ: ' + (err?.message || 'Error'));
+      onToast('Save to folder failed: ' + (err?.message || 'Error'));
     } finally {
       setIsSavingFolder(false);
     }
@@ -341,13 +403,13 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     try {
       const shared = await saveToGoogleDrive(pkg.blob, fileName, mimeType, downloadUrl || undefined);
       if (shared) {
-        onToast('✅ Google Drive বা অ্যাপে শেয়ার সম্পন্ন!');
+        onToast('✅ Shared to Google Drive or app successfully!');
       } else {
-        onToast('🌐 Google Drive ওপেন হয়েছে। ফাইলটি আপলোড করুন।');
+        onToast('🌐 Google Drive opened. Upload the file to your Drive.');
       }
     } catch (err: any) {
       console.error('Drive save error:', err);
-      onToast('Google Drive ত্রুটি: ' + (err?.message || 'Error'));
+      onToast('Google Drive error: ' + (err?.message || 'Error'));
     } finally {
       setIsSavingDrive(false);
     }
@@ -361,7 +423,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     try {
       const shared = await shareFileOnMobile(pkg.blob, fileName, mimeType, downloadUrl || undefined);
       if (shared) {
-        onToast('✅ ফাইলটি সফলভাবে শেয়ার / সেভ করা হয়েছে!');
+        onToast('✅ File shared / saved successfully!');
       }
     } catch (e) {
       console.warn(e);
@@ -377,12 +439,12 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     try {
       if (pkg?.blob) {
         await downloadBlobOrFile(pkg.blob, fileName, mimeType, true);
-        onToast(`📥 ${fileName} ডাউনলোড শুরু হয়েছে!`);
+        onToast(`📥 Started downloading ${fileName}!`);
       } else if (downloadUrl) {
         openInChromeCustomTabs(downloadUrl);
-        onToast(`📥 ${fileName} ডাউনলোড শুরু হয়েছে!`);
+        onToast(`📥 Started downloading ${fileName}!`);
       } else {
-        onToast('ডাউনলোড ফাইল প্রস্তুত হচ্ছে...');
+        onToast('Preparing download file...');
       }
     } catch (err) {
       console.error('Download error:', err);
@@ -412,21 +474,21 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
 
     if (androidBridge && typeof androidBridge.saveBase64File === 'function' && apkPackage?.blob) {
       try {
-        onToast('💾 APK সরাসরি ফোনের Downloads ফোল্ডারে সেভ হচ্ছে...');
+        onToast('💾 Saving APK directly to phone Downloads folder...');
         const base64Data = await blobToBase64(apkPackage.blob);
         androidBridge.saveBase64File(
           base64Data,
           buildResult.apk.fileName,
           'application/vnd.android.package-archive'
         );
-        onToast('✅ APK ফোনের Download ফোল্ডারে সেভ হয়েছে!');
+        onToast('✅ APK saved to phone Download folder!');
         return;
       } catch (err) {
         console.warn('Native save failed, continuing to custom tabs/download:', err);
       }
     }
 
-    onToast('🚀 Custom Tab ওপেন হচ্ছে এবং APK ডাউনলোড শুরু হচ্ছে...');
+    onToast('🚀 Opening Custom Tab and starting APK download...');
 
     let url = buildResult.apk.downloadUrl;
     if (isAppAssetsOrHashUrl(url) && apkPackage?.blob) {
@@ -468,21 +530,21 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
 
     if (androidBridge && typeof androidBridge.saveBase64File === 'function' && aabPackage?.blob) {
       try {
-        onToast('💾 AAB সরাসরি ফোনের Downloads ফোল্ডারে সেভ হচ্ছে...');
+        onToast('💾 Saving AAB directly to phone Downloads folder...');
         const base64Data = await blobToBase64(aabPackage.blob);
         androidBridge.saveBase64File(
           base64Data,
           buildResult.aab.fileName,
           'application/octet-stream'
         );
-        onToast('✅ AAB ফোনের Download ফোল্ডারে সেভ হয়েছে!');
+        onToast('✅ AAB saved to phone Download folder!');
         return;
       } catch (err) {
         console.warn('Native save failed, continuing to custom tabs/download:', err);
       }
     }
 
-    onToast('📦 Custom Tab ওপেন হচ্ছে এবং AAB ডাউনলোড শুরু হচ্ছে...');
+    onToast('📦 Opening Custom Tab and starting AAB download...');
 
     let url = buildResult.aab.downloadUrl;
     if (isAppAssetsOrHashUrl(url) && aabPackage?.blob) {
@@ -510,7 +572,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
-    onToast(`✅ ${label} লিঙ্ক কপি করা হয়েছে!`);
+    onToast(`✅ ${label} link copied!`);
   };
 
   return (
@@ -525,10 +587,10 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
             <div>
               <h3 className="font-bold text-sm sm:text-base text-white">
                 {stage === 'loading'
-                  ? 'অ্যাপ তৈরি ও GitHub-এ আপলোড হচ্ছে...'
+                  ? 'Building App & Uploading to GitHub...'
                   : stage === 'completed'
-                  ? '🎉 আপনার অ্যাপ সফলভাবে রেডি!'
-                  : 'বিল্ড ত্রুটি'}
+                  ? '🎉 Your App is Ready!'
+                  : 'Build Error'}
               </h3>
               <p className="text-[11px] text-slate-400">
                 {config.appName} ({config.packageName})
@@ -595,7 +657,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed pt-1">
-                  অনুগ্রহ করে অপেক্ষা করুন — আপনার অ্যাপের বাইনারি ফাইলগুলো স্বয়ংক্রিয়ভাবে তৈরি হয়ে GitHub রিলিজ ও ক্লাউডে আপলোড হচ্ছে...
+                  Please wait — your application binary files are automatically compiling and uploading to GitHub Releases and cloud CDN...
                 </p>
               </div>
 
@@ -608,8 +670,8 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                       : 'bg-slate-950 border-slate-800 text-slate-500'
                   }`}
                 >
-                  <div className="font-semibold">১. APK ফাইল</div>
-                  <div className="text-[10px]">{progressPercent >= 40 ? '✓ তৈরি শেষ' : 'তৈরি হচ্ছে...'}</div>
+                  <div className="font-semibold">1. APK File</div>
+                  <div className="text-[10px]">{progressPercent >= 40 ? '✓ Ready' : 'Building...'}</div>
                 </div>
 
                 <div
@@ -619,8 +681,8 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                       : 'bg-slate-950 border-slate-800 text-slate-500'
                   }`}
                 >
-                  <div className="font-semibold">২. AAB বান্ডেল</div>
-                  <div className="text-[10px]">{progressPercent >= 75 ? '✓ তৈরি শেষ' : 'তৈরি হচ্ছে...'}</div>
+                  <div className="font-semibold">2. AAB Bundle</div>
+                  <div className="text-[10px]">{progressPercent >= 75 ? '✓ Ready' : 'Building...'}</div>
                 </div>
 
                 <div
@@ -630,8 +692,8 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                       : 'bg-slate-950 border-slate-800 text-slate-500'
                   }`}
                 >
-                  <div className="font-semibold">৩. GitHub আপলোড</div>
-                  <div className="text-[10px]">{progressPercent >= 100 ? '✓ সফল' : 'আপলোড হচ্ছে...'}</div>
+                  <div className="font-semibold">3. GitHub Upload</div>
+                  <div className="text-[10px]">{progressPercent >= 100 ? '✓ Success' : 'Uploading...'}</div>
                 </div>
               </div>
             </div>
@@ -648,10 +710,10 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                   </div>
                   <div>
                     <h4 className="font-bold text-sm sm:text-base text-white flex items-center gap-1.5">
-                      <span>অ্যাপ তৈরি ও ক্লাউড সিঙ্ক সম্পন্ন!</span>
+                      <span>App Build & Cloud Sync Complete!</span>
                     </h4>
                     <p className="text-xs text-slate-300 mt-0.5">
-                      নিচে সরাসরি ফোনে সেভ করুন, <strong>WhatsApp</strong>-এ শেয়ার করুন বা <strong>Google Drive</strong>-এ রাখুন।
+                      Save directly to your phone, share via <strong>WhatsApp</strong>, or store in <strong>Google Drive</strong>.
                     </p>
                   </div>
                 </div>
@@ -664,34 +726,45 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                 )}
               </div>
 
-              {/* Format Tab Selector (APK vs AAB) */}
-              <div className="flex p-1 bg-slate-950 rounded-xl border border-slate-800">
+              {/* Format Tab Selector (APK vs AAB vs Keystore) */}
+              <div className="grid grid-cols-3 p-1 bg-slate-950 rounded-xl border border-slate-800 gap-1">
                 <button
                   type="button"
                   onClick={() => setActiveTab('apk')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                     activeTab === 'apk'
                       ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Smartphone className="w-4 h-4" />
-                  <span>APK প্যাকেজ (.apk)</span>
-                  <span className="text-[10px] opacity-80 font-normal hidden sm:inline">(মোবাইল ইনস্টল)</span>
+                  <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                  <span>APK (.apk)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setActiveTab('aab')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
                     activeTab === 'aab'
                       ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Layers className="w-4 h-4" />
-                  <span>AAB বান্ডেল (.aab)</span>
-                  <span className="text-[10px] opacity-80 font-normal hidden sm:inline">(প্লে স্টোর)</span>
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                  <span>AAB (.aab)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('keystore')}
+                  className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    activeTab === 'keystore'
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Key className="w-3.5 h-3.5 shrink-0" />
+                  <span>Keystore (.jks)</span>
                 </button>
               </div>
 
@@ -705,7 +778,9 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                         <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
                           activeTab === 'apk'
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                            : activeTab === 'aab'
+                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}>
                           {info.label}
                         </span>
@@ -717,12 +792,12 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                       {info.downloadUrl && isPublicHttpUrl(info.downloadUrl) && (
                         <button
                           type="button"
-                          onClick={() => copyUrl(info.downloadUrl, `${info.label} লিংক`)}
+                          onClick={() => copyUrl(info.downloadUrl, `${info.label} Link`)}
                           className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 transition"
-                          title="ডাউনলোড লিংক কপি করুন"
+                          title="Copy download link"
                         >
                           {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedLink ? 'কপি হয়েছে' : 'লিংক কপি'}</span>
+                          <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
                         </button>
                       )}
                     </div>
@@ -737,7 +812,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                         className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 border border-emerald-500/40 text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         <MessageCircle className="w-4 h-4 text-emerald-200" />
-                        <span>WhatsApp-এ পাঠান</span>
+                        <span>Send to WhatsApp</span>
                       </button>
 
                       {/* 2. Save to Device Folder */}
@@ -748,7 +823,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                         className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs sm:text-sm shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         <FolderDown className="w-4 h-4 text-teal-400" />
-                        <span>{isSavingFolder ? 'সেভ হচ্ছে...' : 'পছন্দের ফোল্ডারে সেভ'}</span>
+                        <span>{isSavingFolder ? 'Saving...' : 'Save to Folder'}</span>
                       </button>
 
                       {/* 3. Google Drive Save */}
@@ -759,7 +834,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                         className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-blue-900/60 hover:bg-blue-800/80 border border-blue-600/40 text-blue-100 font-bold text-xs sm:text-sm shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         <HardDrive className="w-4 h-4 text-blue-300" />
-                        <span>Google Drive-এ সেভ</span>
+                        <span>Save to Google Drive</span>
                       </button>
 
                       {/* 4. Native Mobile Share Sheet */}
@@ -770,193 +845,310 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                         className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-purple-900/60 hover:bg-purple-800/80 border border-purple-600/40 text-purple-100 font-bold text-xs sm:text-sm shadow-md transition cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         <Share2 className="w-4 h-4 text-purple-300" />
-                        <span>মোবাইল শেয়ার শিট</span>
+                        <span>Mobile Share Sheet</span>
                       </button>
                     </div>
 
-                    {/* Direct Uploaded Download URL Box with Copy & Open (ALWAYS SHOWN) */}
-                    <div className="p-3 bg-slate-950/90 rounded-xl border border-emerald-500/30 space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                          <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>
-                            {info.isOnlineUrl
-                              ? `সরাসরি ডাউনলোড লিঙ্ক (${activeTab.toUpperCase()} Uploaded):`
-                              : `সরাসরি ডাউনলোড লিঙ্ক (${activeTab.toUpperCase()} Ready):`}
-                          </span>
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {info.isOnlineUrl ? (
-                            <span className="text-[10px] text-emerald-300 font-mono bg-emerald-950/90 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                              অনলাইন লিংক রেডি
+                    {/* KEYSTORE SPECIFIC VIEW */}
+                    {activeTab === 'keystore' ? (
+                      <div className="space-y-3 pt-1">
+                        {/* Keystore Signing Credentials Box */}
+                        <div className="p-3.5 bg-slate-900/90 rounded-xl border border-amber-500/30 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+                              <Key className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Keystore Signing Credentials</span>
                             </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setShowGitHubInput((prev) => !prev)}
-                              className="text-[10px] text-emerald-300 hover:text-white font-medium bg-emerald-950/90 hover:bg-emerald-900 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 transition cursor-pointer"
-                            >
-                              <Github className="w-3 h-3" />
-                              <span>{showGitHubInput ? 'ফর্ম লুকান' : 'GitHub অনলাইন লিংক বানান ↗'}</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="text"
-                          readOnly
-                          value={
-                            info.isOnlineUrl
-                              ? info.downloadUrl
-                              : isUploadingToGitHub
-                              ? 'GitHub Releases লিঙ্ক তৈরি হচ্ছে...'
-                              : 'GitHub Releases অনলাইন লিঙ্ক প্রস্তুত হচ্ছে...'
-                          }
-                          className="flex-1 bg-slate-900 border border-slate-700/80 rounded-lg px-2.5 py-2 text-[11px] text-slate-200 font-mono select-all outline-none"
-                          onClick={(e) => (e.target as HTMLInputElement).select()}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (info.isOnlineUrl) {
-                              copyUrl(info.downloadUrl, `${activeTab.toUpperCase()} লিঙ্ক`);
-                            } else {
-                              handleUploadGitHubNow();
-                            }
-                          }}
-                          className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer"
-                          title="লিংক কপি করুন"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{copiedLink ? 'কপি হয়েছে' : 'কপি'}</span>
-                        </button>
-                        {info.isOnlineUrl ? (
-                          <a
-                            href={info.downloadUrl}
-                            download={info.fileName}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => {
-                              openInChromeCustomTabs(info.downloadUrl);
-                            }}
-                            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer no-underline"
-                            title="ক্রোম বা ব্রাউজারে ওপেন করুন"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>ওপেন</span>
-                          </a>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleUploadGitHubNow}
-                            disabled={isUploadingToGitHub}
-                            className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer disabled:opacity-50"
-                            title="GitHub Releases অনলাইন লিংক তৈরি করুন"
-                          >
-                            <Github className="w-3.5 h-3.5" />
-                            <span>{isUploadingToGitHub ? 'আপলোড হচ্ছে...' : 'অনলাইন লিংক'}</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Inline GitHub Token & Repo Config for Online Releases */}
-                      {(!info.isOnlineUrl || showGitHubInput) && (
-                        <div className="pt-2 mt-2 border-t border-slate-800/80 space-y-2">
-                          <div className="flex items-center justify-between text-[11px] text-slate-300">
-                            <span className="flex items-center gap-1 text-purple-300 font-semibold">
-                              <Github className="w-3.5 h-3.5" />
-                              <span>GitHub Releases অনলাইন লিঙ্ক সক্রিয় করুন:</span>
+                            <span className="text-[10px] text-amber-300 font-mono bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/30">
+                              Production JKS Key
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => setShowGitHubInput((p) => !p)}
-                              className="text-[10px] text-slate-400 hover:text-slate-200 cursor-pointer"
-                            >
-                              {showGitHubInput ? 'লুকান' : 'সেটিংস খুলুন'}
-                            </button>
                           </div>
-                          {showGitHubInput && (
-                            <div className="space-y-2 bg-slate-900/90 p-2.5 rounded-lg border border-purple-500/20">
-                              <p className="text-[10px] text-slate-400 leading-normal">
-                                GitHub Personal Access Token দিলে সরাসরি আপনার রিপোজিটরিতে রিলিজ তৈরি হয়ে বিশ্বস্ত <code className="text-emerald-400">github.com/.../releases/download/...</code> লিংক জেনারেট হবে:
-                              </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                            <div className="bg-slate-950/90 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
                               <div>
-                                <label className="text-[10px] text-slate-400 block mb-0.5">GitHub Repository</label>
-                                <input
-                                  type="text"
-                                  value={githubRepo}
-                                  onChange={(e) => setGithubRepo(e.target.value)}
-                                  placeholder="appcreator05/babu3"
-                                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono"
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[10px] text-slate-400 block mb-0.5">
-                                  GitHub Token (Personal Access Token)
-                                </label>
-                                <input
-                                  type="password"
-                                  value={githubToken}
-                                  onChange={(e) => setGithubToken(e.target.value)}
-                                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono"
-                                />
+                                <span className="text-[10px] text-slate-500 block">Key Alias</span>
+                                <span className="text-white font-bold">{config.keystore?.keyAlias || 'apkcreator25'}</span>
                               </div>
                               <button
                                 type="button"
-                                disabled={isUploadingToGitHub || !githubToken.trim()}
+                                onClick={() => copyUrl(config.keystore?.keyAlias || 'apkcreator25', 'Key Alias')}
+                                className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded transition cursor-pointer"
+                                title="Copy Key Alias"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="bg-slate-950/90 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                              <div>
+                                <span className="text-[10px] text-slate-500 block">Keystore & Key Password</span>
+                                <span className="text-white font-bold">{config.keystore?.storePassword || 'apkcreator'}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyUrl(config.keystore?.storePassword || 'apkcreator', 'Keystore Password')}
+                                className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded transition cursor-pointer"
+                                title="Copy Password"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] text-slate-400 leading-relaxed">
+                            💡 Keep this <strong className="text-slate-200">.jks</strong> file and password safe! You will need this exact Keystore to publish future updates to your app on Google Play Store.
+                          </p>
+                        </div>
+
+                        {/* Direct Keystore Download Action */}
+                        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleDownloadKeystore}
+                            className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-sm shadow-lg shadow-amber-600/25 active:scale-98 transition cursor-pointer text-center"
+                          >
+                            <Download className="w-4 h-4" />
+                            <span>Download Keystore File (.jks)</span>
+                            <Key className="w-3.5 h-3.5 text-amber-200" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleDirectDownload}
+                            disabled={downloading}
+                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition cursor-pointer"
+                            title="Direct browser download"
+                          >
+                            <FolderDown className="w-3.5 h-3.5" />
+                            <span>Direct Download</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Direct Uploaded Download URL Box with Copy & Open (ALWAYS SHOWN) */}
+                        <div className="p-3 bg-slate-950/90 rounded-xl border border-emerald-500/30 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
+                              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>
+                                {info.isOnlineUrl
+                                  ? `Direct Download Link (${activeTab.toUpperCase()} Uploaded):`
+                                  : `Direct Download Link (${activeTab.toUpperCase()} Ready):`}
+                              </span>
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {info.isOnlineUrl ? (
+                                <span className="text-[10px] text-emerald-300 font-mono bg-emerald-950/90 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                  Online Link Ready
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowGitHubInput((prev) => !prev)}
+                                  className="text-[10px] text-emerald-300 hover:text-white font-medium bg-emerald-950/90 hover:bg-emerald-900 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 transition cursor-pointer"
+                                >
+                                  <Github className="w-3 h-3" />
+                                  <span>{showGitHubInput ? 'Hide Form' : 'Create GitHub Online Link ↗'}</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              readOnly
+                              value={
+                                info.isOnlineUrl
+                                  ? info.downloadUrl
+                                  : isUploadingToGitHub
+                                  ? 'Creating GitHub Releases link...'
+                                  : 'Preparing GitHub Releases link...'
+                              }
+                              className="flex-1 bg-slate-900 border border-slate-700/80 rounded-lg px-2.5 py-2 text-[11px] text-slate-200 font-mono select-all outline-none"
+                              onClick={(e) => (e.target as HTMLInputElement).select()}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (info.isOnlineUrl) {
+                                  copyUrl(info.downloadUrl, `${activeTab.toUpperCase()} Link`);
+                                } else {
+                                  handleUploadGitHubNow();
+                                }
+                              }}
+                              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer"
+                              title="Copy link"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+                            </button>
+                            {info.isOnlineUrl ? (
+                              <a
+                                href={info.downloadUrl}
+                                download={info.fileName}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => {
+                                  openInChromeCustomTabs(info.downloadUrl);
+                                }}
+                                className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer no-underline"
+                                title="Open in Chrome or browser"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Open</span>
+                              </a>
+                            ) : (
+                              <button
+                                type="button"
                                 onClick={handleUploadGitHubNow}
-                                className="w-full mt-1 py-1.5 px-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow"
+                                disabled={isUploadingToGitHub}
+                                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer disabled:opacity-50"
+                                title="Create GitHub Releases online link"
                               >
                                 <Github className="w-3.5 h-3.5" />
-                                <span>
-                                  {isUploadingToGitHub
-                                    ? 'GitHub-এ আপলোড হচ্ছে...'
-                                    : 'GitHub-এ আপলোড করে অনলাইন লিঙ্ক তৈরি করুন'}
-                                </span>
+                                <span>{isUploadingToGitHub ? 'Uploading...' : 'Online Link'}</span>
                               </button>
+                            )}
+                          </div>
+
+                          {/* Inline GitHub Token & Repo Config for Online Releases */}
+                          {(!info.isOnlineUrl || showGitHubInput) && (
+                            <div className="pt-2 mt-2 border-t border-slate-800/80 space-y-2">
+                              <div className="flex items-center justify-between text-[11px] text-slate-300">
+                                <span className="flex items-center gap-1 text-purple-300 font-semibold">
+                                  <Github className="w-3.5 h-3.5" />
+                                  <span>Enable GitHub Releases Online Links:</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowGitHubInput((p) => !p)}
+                                  className="text-[10px] text-slate-400 hover:text-slate-200 cursor-pointer"
+                                >
+                                  {showGitHubInput ? 'Hide' : 'Open Settings'}
+                                </button>
+                              </div>
+                              {showGitHubInput && (
+                                <div className="space-y-2 bg-slate-900/90 p-2.5 rounded-lg border border-purple-500/20">
+                                  <p className="text-[10px] text-slate-400 leading-normal">
+                                    By providing a GitHub Personal Access Token, releases will be uploaded directly to your repository with trusted <code className="text-emerald-400">github.com/.../releases/download/...</code> links:
+                                  </p>
+                                  <div>
+                                    <label className="text-[10px] text-slate-400 block mb-0.5">GitHub Repository</label>
+                                    <input
+                                      type="text"
+                                      value={githubRepo}
+                                      onChange={(e) => setGithubRepo(e.target.value)}
+                                      placeholder="appcreator05/babu3"
+                                      className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] text-slate-400 block mb-0.5">
+                                      GitHub Token (Personal Access Token)
+                                    </label>
+                                    <input
+                                      type="password"
+                                      value={githubToken}
+                                      onChange={(e) => setGithubToken(e.target.value)}
+                                      placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                                      className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    disabled={isUploadingToGitHub || !githubToken.trim()}
+                                    onClick={handleUploadGitHubNow}
+                                    className="w-full mt-1 py-1.5 px-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow"
+                                  >
+                                    <Github className="w-3.5 h-3.5" />
+                                    <span>
+                                      {isUploadingToGitHub
+                                        ? 'Uploading to GitHub...'
+                                        : 'Upload to GitHub & Create Online Link'}
+                                    </span>
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Direct Download in Browser / Custom Tabs */}
-                    <div className="pt-1 flex flex-col sm:flex-row gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          if (activeTab === 'apk') {
-                            handleDownloadApkInCustomTab(e);
-                          } else {
-                            handleDownloadAabInCustomTab(e);
-                          }
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-98 transition cursor-pointer text-center"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Custom Tab দিয়ে ডাউনলোড</span>
-                        <Globe className="w-3.5 h-3.5 text-emerald-200" />
-                      </button>
+                        {/* Direct Download in Browser / Custom Tabs */}
+                        <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              if (activeTab === 'apk') {
+                                handleDownloadApkInCustomTab(e);
+                              } else {
+                                handleDownloadAabInCustomTab(e);
+                              }
+                            }}
+                            className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-98 transition cursor-pointer text-center"
+                          >
+                            <Download className="w-4 h-4" />
+                            <span>Download with Custom Tab</span>
+                            <Globe className="w-3.5 h-3.5 text-emerald-200" />
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={handleDirectDownload}
-                        disabled={downloading}
-                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition cursor-pointer"
-                        title="সরাসরি ব্রাউজারে ডাউনলোড"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{downloading ? 'ডাউনলোড হচ্ছে...' : 'সরাসরি ডাউনলোড'}</span>
-                      </button>
-                    </div>
+                          <button
+                            type="button"
+                            onClick={handleDirectDownload}
+                            disabled={downloading}
+                            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition cursor-pointer"
+                            title="Direct browser download"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>{downloading ? 'Downloading...' : 'Direct Download'}</span>
+                          </button>
+                        </div>
+
+                        {/* Quick Keystore Download Banner */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs gap-2 mt-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+                              <Key className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                              <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                                <span>Release Keystore (.jks)</span>
+                                <span className="text-[10px] text-amber-300 font-mono bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                  Ready
+                                </span>
+                              </span>
+                              <span className="text-[11px] text-slate-400 block font-mono">
+                                Alias: <strong className="text-white">{config.keystore?.keyAlias || 'apkcreator25'}</strong> &bull; Password: <strong className="text-white">{config.keystore?.storePassword || 'apkcreator'}</strong>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('keystore')}
+                              className="flex-1 sm:flex-none px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition cursor-pointer text-center"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleDownloadKeystore}
+                              className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>Download Keystore</span>
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })()}
 
-              {/* Both Packages Quick Access Summary */}
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
+              {/* All 3 Packages Quick Access Summary */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                 <div
                   onClick={() => setActiveTab('apk')}
                   className={`p-2.5 rounded-xl border cursor-pointer transition ${
@@ -967,7 +1159,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                 >
                   <div className="flex items-center gap-1.5 font-bold text-emerald-400">
                     <Smartphone className="w-3.5 h-3.5" />
-                    <span>APK প্যাকেজ</span>
+                    <span>APK Package</span>
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono truncate mt-0.5">
                     {buildResult.apk.fileName}
@@ -984,10 +1176,27 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                 >
                   <div className="flex items-center gap-1.5 font-bold text-purple-400">
                     <Layers className="w-3.5 h-3.5" />
-                    <span>AAB বান্ডেল</span>
+                    <span>AAB Bundle</span>
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono truncate mt-0.5">
                     {buildResult.aab?.fileName || `${config.appName.toLowerCase()}-release.aab`}
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab('keystore')}
+                  className={`p-2.5 rounded-xl border cursor-pointer transition ${
+                    activeTab === 'keystore'
+                      ? 'bg-amber-950/50 border-amber-500/50'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                    <Key className="w-3.5 h-3.5" />
+                    <span>Release Keystore</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono truncate mt-0.5">
+                    {getKeystorePackage().fileName}
                   </div>
                 </div>
               </div>
@@ -997,14 +1206,14 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                 <div className="flex items-center gap-2 text-slate-300 font-medium">
                   <FolderOpen className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    ডাউনলোড হওয়ার পর ফাইলটি পাবেন:{' '}
+                    Location of downloaded files:{' '}
                     <strong className="text-white font-mono bg-slate-800 px-1.5 py-0.5 rounded">
                       Internal Storage &gt; Download
                     </strong>
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  💡 <strong>WhatsApp</strong>-এ পাঠালে ফাইল ও ডাউনলোড লিংক সাথে সাথে সেভ হয়ে যাবে। আর <strong>পছন্দের ফোল্ডারে সেভ</strong> বাটনে ক্লিক করে ফোনের যেকোনো ফোল্ডার (বা মেমোরি কার্ড) বাছাই করে সেভ করতে পারবেন।
+                  💡 Send to <strong>WhatsApp</strong> to instantly save the file and link with friends. Or use <strong>Save to Folder</strong> to pick any custom folder or SD card on your device.
                 </p>
               </div>
 
@@ -1018,7 +1227,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                     className="text-purple-400 hover:text-purple-300 underline flex items-center gap-1 text-[11px]"
                   >
                     <Github className="w-3.5 h-3.5" />
-                    <span>GitHub Release পেজ দেখুন ↗</span>
+                    <span>View GitHub Release Page ↗</span>
                   </a>
                 </div>
               )}
@@ -1032,7 +1241,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                 <AlertCircle className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h4 className="font-bold text-white text-base">বিল্ড সম্পন্ন করা যায়নি</h4>
+                <h4 className="font-bold text-white text-base">Build could not be completed</h4>
                 <p className="text-xs text-red-300 max-w-md mx-auto">{errorMessage}</p>
               </div>
 
@@ -1042,7 +1251,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                   onClick={onClose}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
                 >
-                  ফিরে যান
+                  Back
                 </button>
                 <button
                   type="button"
@@ -1050,7 +1259,7 @@ export const OkSaveModal: React.FC<OkSaveModalProps> = ({
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>পুনরায় চেষ্টা করুন</span>
+                  <span>Try Again</span>
                 </button>
               </div>
             </div>

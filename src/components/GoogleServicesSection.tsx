@@ -123,7 +123,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              ফায়ারবেস ক্লাউড মেসেজিং (FCM), পুশ নোটিফিকেশন, অ্যানালিটিক্স ও গুগল সার্ভিস কনফিগারেশন
+              Firebase Cloud Messaging (FCM), push notifications, analytics, and Google services configuration
             </p>
           </div>
         </div>
@@ -197,7 +197,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
                   Click to browse or Drag & Drop <span className="text-amber-400 font-mono">google-services.json</span>
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  Firebase কনসোল থেকে ডাউনলোড করা <code className="text-slate-400 font-mono">google-services.json</code> ফাইল সিলেক্ট করুন
+                  Select the <code className="text-slate-400 font-mono">google-services.json</code> downloaded from Firebase Console
                 </p>
               </div>
               <span className="text-[11px] px-3 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
@@ -222,7 +222,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
                   disabled={!pastedText.trim()}
                   className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-semibold text-xs transition shadow-sm"
                 >
-                  Apply google-services.json (সেভ করুন)
+                  Apply google-services.json (Save)
                 </button>
               </div>
             </div>
@@ -231,7 +231,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
           {/* Quick Help Guide */}
           <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1.5">
             <div className="flex items-center gap-1.5 font-medium text-slate-300">
-              <span>কোথায় পাবেন google-services.json?</span>
+              <span>Where to find google-services.json?</span>
               <a
                 href="https://console.firebase.google.com/"
                 target="_blank"
@@ -242,7 +242,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
               </a>
             </div>
             <p className="text-[11px] text-slate-400">
-              Firebase Console &gt; Project Settings &gt; General &gt; Your apps (Android) &gt; <strong className="text-slate-300 font-mono">Download google-services.json</strong> এ ক্লিক করে ফাইলটি সংগ্রহ করুন।
+              Go to Firebase Console &gt; Project Settings &gt; General &gt; Your apps (Android) &gt; click <strong className="text-slate-300 font-mono">Download google-services.json</strong> to get the file.
             </p>
           </div>
         </div>
@@ -287,7 +287,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
                         Package Name Mismatch Detected!
                       </span>
                       <p className="text-[11px] text-amber-400/90 mt-0.5">
-                        Firebase ফাইলে প্যাকেজ নেম রয়েছে <code className="bg-amber-900/50 px-1 py-0.5 rounded font-mono font-bold text-amber-200">{parsed.packageName}</code> কিন্তু বর্তমান অ্যাপের প্যাকেজ নেম <code className="bg-amber-900/50 px-1 py-0.5 rounded font-mono text-amber-200">{currentPackageName}</code>।
+                        Firebase file specifies package <code className="bg-amber-900/50 px-1 py-0.5 rounded font-mono font-bold text-amber-200">{parsed.packageName}</code>, but current app package is <code className="bg-amber-900/50 px-1 py-0.5 rounded font-mono text-amber-200">{currentPackageName}</code>.
                       </p>
                     </div>
                   </div>
@@ -308,7 +308,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
                 {/* Project ID */}
                 <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
                   <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                    <span>Project ID (প্রজেক্ট আইডি)</span>
+                    <span>Project ID</span>
                     {parsed.projectId && (
                       <button
                         type="button"
@@ -377,7 +377,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
                 {/* Mobile SDK App ID */}
                 <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
                   <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                    <span>Firebase App ID (App ID)</span>
+                    <span>Firebase App ID</span>
                     {parsed.appId && (
                       <button
                         type="button"
@@ -402,7 +402,7 @@ export const GoogleServicesSection: React.FC<GoogleServicesSectionProps> = ({
               <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/80 flex items-center gap-2 text-xs text-slate-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
                 <span>
-                  <strong>Build Pipeline:</strong> APK ও AAB বান্ডেল তৈরির সময় এই ফাইলটি স্বয়ংক্রিয়ভাবে <code className="text-amber-300 font-mono">assets/google-services.json</code> এবং সোর্স ডিরেক্টরিতে ইনজেক্ট হবে।
+                  <strong>Build Pipeline:</strong> When generating APK and AAB packages, this file will automatically inject into <code className="text-amber-300 font-mono">assets/google-services.json</code> and source paths.
                 </span>
               </div>
 

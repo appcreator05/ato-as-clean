@@ -84,19 +84,19 @@ jobs:
           mkdir -p android/app/src/main/assets/web
           cp -r dist/* android/app/src/main/assets/web/
 
-      - name: Build Android APK
+      - name: Build Android Release APK & AAB
         run: |
           cd android
-          gradle assembleDebug --no-daemon --stacktrace
-          gradle assembleRelease --no-daemon --stacktrace || true
+          chmod +x ./gradlew || true
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace || ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK Artifact
+      - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: apk-creator-android-app
+          name: android-release-builds
           path: |
-            android/app/build/outputs/apk/debug/*.apk
             android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
           retention-days: 30`;
 
   const GIT_COMMANDS = `# 1. Initialize git & commit all files
@@ -149,7 +149,7 @@ git push -u origin main`;
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                গিটহাবের মাধ্যমে এই পুরো অ্যাপটির একটি ইন্সটলেবল APK তৈরি করুন এবং যেকোনো ফোনে চালান
+                Build an installable APK for this entire app via GitHub and run it on any phone
               </p>
             </div>
           </div>
@@ -209,17 +209,17 @@ git push -u origin main`;
               <div className="bg-gradient-to-r from-purple-950/40 to-slate-900 border border-purple-500/30 rounded-xl p-4 text-xs">
                 <div className="flex items-center gap-2 font-semibold text-purple-200 text-sm mb-1">
                   <Sparkles className="w-4 h-4 text-purple-400" />
-                  <span>গিটহাবে পুশ করলেই স্বয়ংক্রিয়ভাবে APK তৈরি হবে!</span>
+                  <span>Push to GitHub to automatically build the APK!</span>
                 </div>
                 <p className="text-slate-300 leading-relaxed">
-                  এই রিপোজিটরির ভেতরে ইতিমধ্যে <code className="text-purple-300 bg-purple-950/70 px-1 py-0.5 rounded font-mono">.github/workflows/build-apk.yml</code> এবং সম্পূর্ণ <code className="text-purple-300 bg-purple-950/70 px-1 py-0.5 rounded font-mono">android/</code> প্রজেক্ট যুক্ত করে দেওয়া হয়েছে।
+                  This repository already includes <code className="text-purple-300 bg-purple-950/70 px-1 py-0.5 rounded font-mono">.github/workflows/build-apk.yml</code> and the complete <code className="text-purple-300 bg-purple-950/70 px-1 py-0.5 rounded font-mono">android/</code> project ready to build.
                 </p>
               </div>
 
               {/* Step by Step instructions */}
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                  সহজ ৩টি ধাপে APK পাওয়ার নিয়ম:
+                  3 Easy Steps to Get Your APK:
                 </h3>
 
                 <div className="space-y-2.5 text-xs">
@@ -229,9 +229,9 @@ git push -u origin main`;
                       1
                     </div>
                     <div>
-                      <h4 className="font-semibold text-white">কোডটি GitHub-এ পুশ করুন</h4>
+                      <h4 className="font-semibold text-white">Push the Code to GitHub</h4>
                       <p className="text-slate-400 text-[11px] mt-0.5">
-                        প্রজেক্টের Settings থেকে <strong>Export to GitHub</strong> চাপুন অথবা আপনার টার্মিনাল থেকে গিটহাবে পুশ করুন।
+                        In project Settings click <strong>Export to GitHub</strong> or push from your terminal to GitHub.
                       </p>
                     </div>
                   </div>
@@ -242,9 +242,9 @@ git push -u origin main`;
                       2
                     </div>
                     <div>
-                      <h4 className="font-semibold text-white">GitHub Actions স্বয়ংক্রিয়ভাবে APK বিল্ড করবে</h4>
+                      <h4 className="font-semibold text-white">GitHub Actions Automatically Builds the APK</h4>
                       <p className="text-slate-400 text-[11px] mt-0.5">
-                        আপনার GitHub রিপোজিটরির <strong>Actions</strong> ট্যাবে গিয়ে দেখুন <code className="text-purple-300 font-mono">Build APK Creator Android App</code> স্বয়ংক্রিয়ভাবে রান হচ্ছে।
+                        Go to the <strong>Actions</strong> tab of your GitHub repository to see <code className="text-purple-300 font-mono">Build APK Creator Android App</code> running automatically.
                       </p>
                     </div>
                   </div>
@@ -255,27 +255,27 @@ git push -u origin main`;
                       3
                     </div>
                     <div className="space-y-2">
-                      <h4 className="font-semibold text-white">APK ফাইল ডাউনলোড করার ২টি সহজ জায়গা:</h4>
+                      <h4 className="font-semibold text-white">2 Easy Ways to Download the APK File:</h4>
                       <p className="text-slate-400 text-[11px] leading-relaxed">
-                        বিল্ড সফল হলে আপনি ২টি জায়গা থেকে সরাসরি APK ডাউনলোড করতে পারবেন:
+                        When the build succeeds, you can download the APK from two direct locations:
                       </p>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px]">
                         <div className="p-2.5 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-emerald-200">
                           <strong className="block text-emerald-300 font-semibold mb-1">
-                            পদ্ধতি ১: Releases থেকে (সরাসরি APK)
+                            Method 1: From Releases (Direct APK)
                           </strong>
                           <span>
-                            আপনার রিপোজিটরির মূল পেজের ডানপাশে <strong>Releases</strong> সেকশনে যান। সেখানে থাকা <code className="bg-emerald-950 px-1 py-0.5 rounded font-mono text-emerald-300">apk-creator-app.apk</code> ফাইলে ক্লিক করলেই সরাসরি ডাউনলোড হবে!
+                            Go to the <strong>Releases</strong> section on the right side of your repo main page. Click on <code className="bg-emerald-950 px-1 py-0.5 rounded font-mono text-emerald-300">apk-creator-app.apk</code> to download directly!
                           </span>
                         </div>
 
                         <div className="p-2.5 rounded-lg bg-purple-950/30 border border-purple-500/30 text-purple-200">
                           <strong className="block text-purple-300 font-semibold mb-1">
-                            পদ্ধতি ২: Actions Summary থেকে
+                            Method 2: From Actions Summary
                           </strong>
                           <span>
-                            টার্মিনাল লগস পেজের বাম পাশে থাকা <strong>"Summary"</strong> বাটনে ক্লিক করুন। পেজের একদম নিচে স্ক্রল করলে <strong>Artifacts</strong> এর নিচে <span className="underline font-semibold">apk-creator-app</span> পেয়ে যাবেন।
+                            Click the <strong>"Summary"</strong> button on the left of the Actions build page. Scroll to the bottom to find <span className="underline font-semibold">apk-creator-app</span> under <strong>Artifacts</strong>.
                           </span>
                         </div>
                       </div>
@@ -340,10 +340,10 @@ git push -u origin main`;
               <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4">
                 <div className="flex items-center gap-2 font-semibold text-emerald-300 text-sm mb-1">
                   <Smartphone className="w-4 h-4 text-emerald-400" />
-                  <span>কোনো বিল্ড ছাড়াও সরাসরি ফোনে ইনস্টল করা সম্ভব!</span>
+                  <span>Install directly on mobile phone without compiling!</span>
                 </div>
                 <p className="text-slate-300 leading-relaxed">
-                  এই অ্যাপটিতে <strong>Progressive Web App (PWA)</strong> ইন্টিগ্রেট করা রয়েছে। যেকোনো অ্যান্ড্রয়েড মোবাইল থেকে এই লিংকটি ওপেন করলে এটি সরাসরি একটি আসল অ্যান্ড্রয়েড অ্যাপ্লিকেশনের মতো হোমস্ক্রিনে ইনস্টল হয়ে যায়।
+                  This app has <strong>Progressive Web App (PWA)</strong> integrated. Opening this link from any Android mobile browser allows installing it directly to your home screen just like a native Android application.
                 </p>
               </div>
 
@@ -353,17 +353,17 @@ git push -u origin main`;
                   <div>
                     <span className="font-semibold block text-sm">App Already Installed!</span>
                     <span className="text-xs text-emerald-300/80">
-                      এই ডিভাইসটিতে ইতিমধ্যে APK Creator অ্যাপ ইনস্টল অবস্থায় রান করছে।
+                      APK Creator is already installed and running on this device.
                     </span>
                   </div>
                 </div>
               ) : isInstallable ? (
                 <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
                   <h4 className="font-semibold text-white text-sm">
-                    ১-ট্যাপে সরাসরি এই ডিভাইসে ইনস্টল করুন
+                    1-Tap Install on this Device
                   </h4>
                   <p className="text-slate-400 text-xs">
-                    নিচের বাটনে চাপ দিলে আপনার মোবাইলের হোমস্ক্রিনে <strong className="text-white">APK Creator</strong> অ্যাপের আইকন যুক্ত হবে এবং ফুলস্ক্রিনে অ্যাপের মতো চলবে।
+                    Tapping the button below adds the <strong className="text-white">APK Creator</strong> app icon to your home screen and launches in fullscreen app mode.
                   </p>
                   <button
                     type="button"
@@ -377,20 +377,20 @@ git push -u origin main`;
               ) : (
                 <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
                   <h4 className="font-semibold text-white text-sm">
-                    মোবাইল ব্রাউজার থেকে ইনস্টল করার নিয়ম:
+                    How to Install from Mobile Browser:
                   </h4>
                   <ul className="space-y-2 text-slate-300">
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-[10px] shrink-0 mt-0.5">1</span>
-                      <span>মোবাইল ফোনে <strong>Google Chrome</strong> দিয়ে এই অ্যাপের লিংক ওপেন করুন।</span>
+                      <span>Open this app URL in <strong>Google Chrome</strong> on your mobile phone.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-[10px] shrink-0 mt-0.5">2</span>
-                      <span>ক্রোমের উপরের ডানদিকের <strong>3-Dots (⋮)</strong> মেনু চাপুন।</span>
+                      <span>Tap the top-right <strong>3-Dots (⋮)</strong> menu.</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-[10px] shrink-0 mt-0.5">3</span>
-                      <span><strong>"Install app"</strong> বা <strong>"Add to Home screen"</strong> চাপুন। ব্যাস, অ্যাপটি ইনস্টল হয়ে যাবে!</span>
+                      <span>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>. The app will install instantly!</span>
                     </li>
                   </ul>
                 </div>
@@ -425,33 +425,38 @@ git push -u origin main`;
               <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
                 <h4 className="font-semibold text-white text-sm flex items-center gap-1.5">
                   <Terminal className="w-4 h-4 text-cyan-400" />
-                  <span>নিজের কম্পিউটারে Android Studio বা Gradle দিয়ে বিল্ড:</span>
+                  <span>Build with Android Studio or Gradle on your computer:</span>
                 </h4>
                 <p className="text-slate-300 leading-relaxed">
-                  এই রিপোজিটরির ভেতরে <code className="text-cyan-300 font-mono">android/</code> ফোল্ডারটি একটি সম্পূর্ণ অ্যান্ড্রয়েড স্টুডিও প্রজেক্ট।
+                  Inside this repository, the <code className="text-cyan-300 font-mono">android/</code> directory is a complete standalone Android Studio project.
                 </p>
 
                 <div className="pt-2 space-y-2 font-mono text-[11px]">
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
-                    <span className="text-slate-500 block"># 1. ওয়েব প্রজেক্ট বিল্ড করুন:</span>
+                    <span className="text-slate-500 block"># 1. Build the web app:</span>
                     npm install && npm run build
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
-                    <span className="text-slate-500 block"># 2. ওয়েব ফাইল অ্যান্ড্রয়েড এসেটসে কপি করুন:</span>
+                    <span className="text-slate-500 block"># 2. Copy web files into Android assets:</span>
                     mkdir -p android/app/src/main/assets/web<br />
                     cp -r dist/* android/app/src/main/assets/web/
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
-                    <span className="text-slate-500 block"># 3. সরাসরি APK কম্পাইল করুন:</span>
+                    <span className="text-slate-500 block"># 3. Compile Release APK &amp; AAB (for Real Ads):</span>
                     cd android<br />
-                    ./gradlew assembleDebug
+                    ./gradlew assembleRelease<br />
+                    <span className="text-slate-500 block mt-1"># For Google Play Store AAB Bundle:</span>
+                    ./gradlew bundleRelease
                   </div>
                 </div>
 
                 <p className="text-[11px] text-emerald-400 pt-1">
-                  ✓ কম্পাইল সম্পন্ন হলে <code className="font-mono">android/app/build/outputs/apk/debug/app-debug.apk</code> ফাইলটি তৈরি হবে।
+                  ✓ Signed Release APK created at <code className="font-mono">android/app/build/outputs/apk/release/app-release.apk</code> with Real Live Ads enabled.
+                </p>
+                <p className="text-[11px] text-purple-400">
+                  ✓ Google Play Store AAB bundle created at <code className="font-mono">android/app/build/outputs/bundle/release/app-release.aab</code>.
                 </p>
               </div>
             </div>

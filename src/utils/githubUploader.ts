@@ -102,7 +102,7 @@ export async function uploadApkToGitHubRelease(
 
   const data = await res.json();
   if (!res.ok || !data.success) {
-    throw new Error(data.error || 'GitHub-এ আপলোড করতে ব্যর্থ হয়েছে।');
+    throw new Error(data.error || 'Failed to upload to GitHub.');
   }
 
   // Save successful credentials if provided
@@ -147,7 +147,7 @@ export async function uploadToFreeCloud(
     clearTimeout(timer);
     const data = await res.json();
     if (!res.ok || !data.success) {
-      throw new Error(data.error || 'ক্লাউড স্টোরেজে আপলোড করতে ব্যর্থ হয়েছে।');
+      throw new Error(data.error || 'Failed to upload to cloud storage.');
     }
 
     return {
@@ -203,7 +203,7 @@ export async function uploadBothPackages(
 
   if (bridge && typeof bridge.uploadReleaseToGitHub === 'function' && creds.token && creds.repo) {
     try {
-      onProgress?.('মোবাইল থেকে সরাসরি GitHub Releases-এ বাইনারি প্যাকেজ আপলোড হচ্ছে...');
+      onProgress?.('Uploading binary package directly to GitHub Releases from mobile...');
       const [rawApkBase64, rawAabBase64] = await Promise.all([
         blobToBase64(apk.blob),
         aab ? blobToBase64(aab.blob) : Promise.resolve(''),
@@ -216,7 +216,7 @@ export async function uploadBothPackages(
         const cbName = `__gh_native_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         const timer = setTimeout(() => {
           delete (window as any)[cbName];
-          reject(new Error('GitHub আপলোড টাইমআউট হয়েছে (৯০ সেকেন্ড)'));
+          reject(new Error('GitHub upload timed out (90 seconds)'));
         }, 90000);
 
         (window as any)[cbName] = (res: any) => {
@@ -232,7 +232,7 @@ export async function uploadBothPackages(
               aab: res.aab,
             });
           } else {
-            reject(new Error(res?.error || 'GitHub আপলোড ব্যর্থ হয়েছে'));
+            reject(new Error(res?.error || 'GitHub upload failed'));
           }
         };
 
@@ -277,7 +277,7 @@ export async function uploadBothPackages(
   // 2. If GitHub configured, upload via server endpoint /api/github/upload-both-release
   if (hasCredentials) {
     try {
-      onProgress?.('GitHub Releases-এ বাইনারি প্যাকেজ আপলোড হচ্ছে...');
+      onProgress?.('Uploading binary package to GitHub Releases...');
       const { owner, repo } = creds.repo ? parseOwnerAndRepo(creds.repo) : { owner: '', repo: '' };
       const [apkBase64, aabBase64] = await Promise.all([
         blobToBase64(apk.blob),
@@ -348,7 +348,7 @@ export async function uploadBothPackages(
   // 3. Client Direct GitHub Upload (validates assets exist before claiming success)
   if (creds.token && creds.repo) {
     try {
-      onProgress?.('GitHub Releases-এ ক্লায়েন্ট থেকে সরাসরি রিলিজ তৈরি হচ্ছে...');
+      onProgress?.('Creating release directly from client on GitHub Releases...');
       const directResult = await uploadDirectToGitHubFromClient(apk, aab, creds, onProgress);
       if (directResult && directResult.success) {
         saveGitHubConfig(creds);
@@ -361,7 +361,7 @@ export async function uploadBothPackages(
 
   // 4. Primary Fast Fallback: Prepare Direct Download URL on our fast Cloud Run server
   try {
-    onProgress?.('সার্ভার থেকে সরাসরি ডাউনলোড লিঙ্ক তৈরি হচ্ছে...');
+    onProgress?.('Preparing direct download link from server...');
     const [apkUrl, aabUrl] = await Promise.all([
       createDownloadUrl(apk.blob, apk.fileName, 'application/vnd.android.package-archive'),
       aab ? createDownloadUrl(aab.blob, aab.fileName, 'application/octet-stream') : Promise.resolve(null),
@@ -387,7 +387,7 @@ export async function uploadBothPackages(
 
   // 3. Secondary Fallback: Free Cloud Upload (best-effort)
   try {
-    onProgress?.('ক্লাউড স্টোরেজে আপলোড হচ্ছে...');
+    onProgress?.('Uploading to cloud storage...');
     const [apkCloud, aabCloud] = await Promise.allSettled([
       uploadToFreeCloud(apk.blob, apk.fileName, 10000),
       aab ? uploadToFreeCloud(aab.blob, aab.fileName, 10000) : Promise.resolve(null),
@@ -459,7 +459,7 @@ export async function uploadDirectToGitHubFromClient(
   const safeApkName = apk.fileName.trim().replace(/[^a-zA-Z0-9._-]/g, '_') || 'app-release.apk';
   const safeAabName = aab && aab.blob ? aab.fileName.trim().replace(/[^a-zA-Z0-9._-]/g, '_') || 'app-release.aab' : '';
 
-  onProgress?.('GitHub-এ বাইনারি প্যাকেজ প্রস্তুত হচ্ছে...');
+  onProgress?.('Preparing binary packages for GitHub...');
   const [rawApkBase64, rawAabBase64] = await Promise.all([
     blobToBase64(apk.blob),
     aab && aab.blob ? blobToBase64(aab.blob) : Promise.resolve(''),
@@ -469,7 +469,7 @@ export async function uploadDirectToGitHubFromClient(
   const cleanAabBase64 = rawAabBase64.includes(',') ? rawAabBase64.split(',')[1] : rawAabBase64;
 
   // 1. Commit APK directly into GitHub repository (api.github.com has 100% CORS support)
-  onProgress?.('APK প্যাকেজ GitHub রিপোজিটরিতে সংরক্ষণ হচ্ছে...');
+  onProgress?.('Saving APK package into GitHub repository...');
   const apkFilePath = `releases/${tag}/${safeApkName}`;
   let apkDownloadUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${apkFilePath}`;
 
@@ -529,7 +529,7 @@ export async function uploadDirectToGitHubFromClient(
   }
 
   // 3. Create GitHub Release
-  onProgress?.('GitHub Releases ড্যাশবোর্ডে রিলিজ প্রকাশ হচ্ছে...');
+  onProgress?.('Publishing release on GitHub Releases dashboard...');
   let releaseUrl = `https://github.com/${owner}/${repo}/releases/tag/${tag}`;
   let releaseId: number | null = null;
 
@@ -537,7 +537,7 @@ export async function uploadDirectToGitHubFromClient(
     const releaseBody = [
       `## 🚀 Release ${tag} (${safeApkName})`,
       '',
-      '### 📥 সরাসরি ডাউনলোড লিংক (Direct Download Links):',
+      '### 📥 Direct Download Links:',
       `- 📱 **APK (Android Package):** [${safeApkName}](${apkDownloadUrl})`,
       safeAabName && aabDownloadUrl ? `- 📦 **AAB (Play Store Bundle):** [${safeAabName}](${aabDownloadUrl})` : '',
       '',

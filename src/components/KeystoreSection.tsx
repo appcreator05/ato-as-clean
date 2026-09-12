@@ -65,16 +65,16 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
   };
 
   const handleGenerateKeystore = () => {
-    const alias = keystore.keyAlias.trim() || 'releasekey';
-    const storePass = keystore.storePassword || 'release123456';
-    const keyPass = keystore.keyPassword || storePass;
-    const certName = keystore.certificateName.trim() || appName || 'AppPublisher';
-    const org = keystore.organization.trim() || 'MobileProduction';
+    const alias = keystore.keyAlias.trim() || 'apkcreator25';
+    const storePass = keystore.storePassword || 'apkcreator';
+    const keyPass = keystore.keyPassword || storePass || 'apkcreator';
+    const certName = keystore.certificateName.trim() || appName || 'Apk Creator 25 Release';
+    const org = keystore.organization.trim() || 'Apk Creator 25';
     const years = keystore.validityYears || 25;
 
     const buffer = generateStandardJksBuffer(alias, storePass, keyPass, certName, org, years);
-    const safeName = appName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase() || 'release';
-    const fileName = keystore.keystoreFileName || `${safeName}-keystore.jks`;
+    const safeName = appName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase() || 'apkcreator25';
+    const fileName = keystore.keystoreFileName || `${safeName}-release-key.jks`;
 
     downloadKeystoreFile(buffer, fileName);
     setDownloadSuccess(true);
@@ -115,11 +115,11 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
             <h2 className="text-base font-semibold text-white flex items-center gap-2">
               <span>Keystore Signing Credentials</span>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">
-                কিস্টোর সাইনিং
+                Keystore Signing
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              আপনার নিজস্ব রিলিজ কিস্টোর ইনপুট করুন অথবা প্লে স্টোর আপডেটের জন্য কাস্টম কি সেট করুন
+              Provide your custom release keystore or use the built-in auto-key for Play Store and direct installation
             </p>
           </div>
         </div>
@@ -148,7 +148,7 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
               Auto-Generated Release Key
             </span>
             <span>
-              স্বয়ংক্রিয় প্রফেশনাল v2/v3 রিলিজ সাইনিং। যেকোনো ফোনে সরাসরি ইনস্টলযোগ্য।
+              Automatic professional v2/v3 release signing. Ready to install on any Android phone.
             </span>
           </div>
         </label>
@@ -175,7 +175,7 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
               <span>Use Custom Keystore</span>
             </span>
             <span>
-              আপনার নিজস্ব .jks বা .keystore ফাইল ও পাসওয়ার্ড ইনপুট করুন (প্লে স্টোর রেডি)।
+              Input your own .jks or .keystore file and credentials (Google Play Store ready).
             </span>
           </div>
         </label>
@@ -266,7 +266,7 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
             {/* Keystore Store Password */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
-                <span>Keystore Password (স্টোর পাসওয়ার্ড)</span>
+                <span>Keystore Password</span>
                 <span className="text-[10px] text-slate-500 font-mono">storePassword</span>
               </label>
               <div className="relative">
@@ -274,7 +274,7 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
                   type={showStorePass ? 'text' : 'password'}
                   value={keystore.storePassword}
                   onChange={(e) => onChange({ storePassword: e.target.value })}
-                  placeholder="e.g. MyStorePass@123"
+                  placeholder="apkcreator"
                   className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2 text-xs sm:text-sm text-white pr-9 outline-none transition"
                 />
                 <button
@@ -290,14 +290,14 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
             {/* Key Alias */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
-                <span>Key Alias (কি এলিয়াস)</span>
+                <span>Key Alias</span>
                 <span className="text-[10px] text-slate-500 font-mono">keyAlias</span>
               </label>
               <input
                 type="text"
                 value={keystore.keyAlias}
                 onChange={(e) => onChange({ keyAlias: e.target.value })}
-                placeholder="e.g. key0 or releaseKey"
+                placeholder="apkcreator25"
                 className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2 text-xs sm:text-sm text-white outline-none transition font-mono"
               />
             </div>
@@ -305,7 +305,7 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
             {/* Key Password */}
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
-                <span>Key Password (কি পাসওয়ার্ড)</span>
+                <span>Key Password</span>
                 <span className="text-[10px] text-slate-500 font-mono">keyPassword</span>
               </label>
               <div className="relative">
@@ -313,7 +313,7 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
                   type={showKeyPass ? 'text' : 'password'}
                   value={keystore.keyPassword}
                   onChange={(e) => onChange({ keyPassword: e.target.value })}
-                  placeholder="Leave empty if same as store password"
+                  placeholder="apkcreator"
                   className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2 text-xs sm:text-sm text-white pr-9 outline-none transition"
                 />
                 <button
@@ -336,7 +336,7 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
                 type="text"
                 value={keystore.organization}
                 onChange={(e) => onChange({ organization: e.target.value })}
-                placeholder="e.g. App Studio Ltd."
+                placeholder="Apk Creator 25"
                 className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2 text-xs sm:text-sm text-white outline-none transition"
               />
             </div>
@@ -347,17 +347,17 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
             <div className="text-xs">
               <span className="font-semibold text-slate-200 flex items-center gap-1.5 mb-0.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                কিস্টোর ফাইল নেই?
+                Download Signing Keystore
               </span>
               <span className="text-slate-400">
-                উপরের তথ্য দিয়ে একটি নতুন পার্মানেন্ট <code className="text-emerald-400 font-mono">.jks</code> ফাইল তৈরি ও ডাউনলোড করে রাখুন।
+                Generate and download a permanent signed <code className="text-emerald-400 font-mono">.jks</code> file using the details above.
               </span>
             </div>
 
             <button
               type="button"
               onClick={handleGenerateKeystore}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 shrink-0 transition"
+              className="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 shrink-0 transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Generate & Download .JKS</span>
@@ -367,16 +367,41 @@ export const KeystoreSection: React.FC<KeystoreSectionProps> = ({
           {downloadSuccess && (
             <p className="text-xs text-emerald-400 flex items-center gap-1.5 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4" />
-              <span>নতুন কিস্টোর ফাইল তৈরি ও ডাউনলোড সম্পন্ন হয়েছে! এটি নিরাপদে সংরক্ষণ করুন।</span>
+              <span>New keystore file generated and downloaded successfully! Store it safely for future updates.</span>
             </p>
           )}
         </div>
       ) : (
-        <div className="bg-slate-950/50 border border-slate-800/80 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>
-            Standard Auto-Keystore সক্রিয় রয়েছে। APK Signature Schemes <strong className="text-emerald-300 font-mono">v1, v2, v3, v4</strong> সমর্থিত — Android 6.0 Marshmallow থেকে Android 16 Baklava পর্যন্ত সকল ফোনে সাইনড মোডে চলবে।
-          </span>
+        <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 space-y-3 text-xs text-slate-400">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 text-emerald-300 font-semibold">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Auto-Generated Release Key Active</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateKeystore}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download Keystore (.jks)</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            <div>
+              <span className="text-slate-500 block text-[10px]">Key Alias</span>
+              <span className="text-white font-bold">{keystore.keyAlias || 'apkcreator25'}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block text-[10px]">Keystore & Key Password</span>
+              <span className="text-white font-bold">{keystore.storePassword || 'apkcreator'}</span>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            All builds are signed automatically with standard production signatures (v1, v2, v3, v4). You can download this keystore file at any time to publish or update on Google Play Store.
+          </p>
         </div>
       )}
     </div>

@@ -8,8 +8,11 @@ import { BuildGuideModal } from './components/BuildGuideModal';
 import { DownloadApkModal } from './components/DownloadApkModal';
 import { GitHubBuildModal } from './components/GitHubBuildModal';
 import { OkSaveModal } from './components/OkSaveModal';
+import { RequiredFieldsModal } from './components/RequiredFieldsModal';
+import { TranslateModal } from './components/TranslateModal';
 import { exportAndroidProjectZip } from './utils/zipExporter';
 import { downloadBlobOrFile, openInChromeCustomTabs } from './utils/fileDownloader';
+import { getSavedLanguage } from './utils/translator';
 import {
   Sparkles,
   Download,
@@ -34,6 +37,14 @@ export default function App() {
   const [showGitHubModal, setShowGitHubModal] = useState(false);
   const [showApkModal, setShowApkModal] = useState(false);
   const [showOkSaveModal, setShowOkSaveModal] = useState(false);
+  const [showRequiredFieldsModal, setShowRequiredFieldsModal] = useState(false);
+  const [missingFields, setMissingFields] = useState({
+    websiteUrl: false,
+    appName: false,
+    packageName: false,
+  });
+  const [showTranslateModal, setShowTranslateModal] = useState(false);
+  const [currentLang, setCurrentLang] = useState<string>(() => getSavedLanguage());
   const [apkModalFormat, setApkModalFormat] = useState<'apk' | 'aab'>('apk');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<'config' | 'preview'>('config');
@@ -50,6 +61,53 @@ export default function App() {
 
   const handleConfigChange = (updated: Partial<AppConfig>) => {
     setConfig((prev) => ({ ...prev, ...updated }));
+    if (updated.websiteUrl !== undefined && updated.websiteUrl.trim()) {
+      setMissingFields((prev) => ({ ...prev, websiteUrl: false }));
+    }
+    if (updated.appName !== undefined && updated.appName.trim()) {
+      setMissingFields((prev) => ({ ...prev, appName: false }));
+    }
+    if (updated.packageName !== undefined && updated.packageName.trim()) {
+      setMissingFields((prev) => ({ ...prev, packageName: false }));
+    }
+  };
+
+  const handleOkAndSaveClick = () => {
+    const isUrlMissing = !config.websiteUrl || !config.websiteUrl.trim();
+    const isAppNameMissing = !config.appName || !config.appName.trim();
+    const isPackageMissing = !config.packageName || !config.packageName.trim();
+
+    if (isUrlMissing || isAppNameMissing || isPackageMissing) {
+      setMissingFields({
+        websiteUrl: isUrlMissing,
+        appName: isAppNameMissing,
+        packageName: isPackageMissing,
+      });
+      setShowRequiredFieldsModal(true);
+      return;
+    }
+
+    // If all tasks are filled properly, open OK & Save modal!
+    setMissingFields({
+      websiteUrl: false,
+      appName: false,
+      packageName: false,
+    });
+    setShowOkSaveModal(true);
+  };
+
+  const handleFocusMissingField = (fieldKey: 'websiteUrl' | 'appName' | 'packageName') => {
+    setMobileTab('config');
+    setTimeout(() => {
+      let inputId = 'input-website-url';
+      if (fieldKey === 'appName') inputId = 'input-app-name';
+      if (fieldKey === 'packageName') inputId = 'input-package-name';
+      const el = document.getElementById(inputId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+      }
+    }, 150);
   };
 
   const handleAdMobChange = (updated: Partial<AppConfig['admob']>) => {
@@ -164,6 +222,8 @@ export default function App() {
         onOpenCodeModal={() => setShowCodeModal(true)}
         onOpenGuideModal={() => setShowGuideModal(true)}
         onOpenGitHubModal={() => setShowGitHubModal(true)}
+        onOpenTranslateModal={() => setShowTranslateModal(true)}
+        currentLang={currentLang}
         onLoadPreset={handleLoadPreset}
       />
 
@@ -211,13 +271,15 @@ export default function App() {
               onAdMobChange={handleAdMobChange}
               onStartIoChange={handleStartIoChange}
               onKeystoreChange={handleKeystoreChange}
+              highlightMissing={missingFields}
             />
 
             {/* ONLY ONE BUTTON: OK & Save */}
             <div className="pt-4 pb-2">
               <button
+                id="main-ok-and-save-button"
                 type="button"
-                onClick={() => setShowOkSaveModal(true)}
+                onClick={handleOkAndSaveClick}
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 font-extrabold text-lg sm:text-xl text-slate-950 shadow-xl shadow-emerald-500/25 active:scale-[0.98] transition flex items-center justify-center cursor-pointer border border-emerald-400/40"
               >
                 OK &amp; Save
@@ -253,6 +315,14 @@ export default function App() {
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Required Fields Custom Popup */}
+      <RequiredFieldsModal
+        isOpen={showRequiredFieldsModal}
+        onClose={() => setShowRequiredFieldsModal(false)}
+        missingFields={missingFields}
+        onFocusField={handleFocusMissingField}
+      />
 
       {/* ⭐ OK & Save Flow Modal (Loading Spring & Direct Download APK / AAB Hub) ⭐ */}
       <OkSaveModal
@@ -294,6 +364,17 @@ export default function App() {
         isOpen={showGitHubModal}
         onClose={() => setShowGitHubModal(false)}
         onToast={showToast}
+      />
+
+      {/* Language Translate Modal */}
+      <TranslateModal
+        isOpen={showTranslateModal}
+        onClose={() => setShowTranslateModal(false)}
+        currentLang={currentLang}
+        onLanguageChanged={(code) => {
+          setCurrentLang(code);
+          showToast(`Language switched to ${code.toUpperCase()}!`);
+        }}
       />
     </div>
   );

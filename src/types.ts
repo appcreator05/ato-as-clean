@@ -93,9 +93,9 @@ export interface AppConfig {
 }
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
-  appName: 'Apk Creator 25',
-  packageName: 'com.apkcreator25.app',
-  websiteUrl: 'https://apkcreator25.blogspot.com',
+  appName: '',
+  packageName: '',
+  websiteUrl: '',
   appLogoUrl:
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&auto=format&fit=crop&q=80',
   splashImageUrl:
@@ -153,14 +153,14 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
 
   keystore: {
     useCustomKeystore: false,
-    keystoreFileName: 'my-release-key.jks',
+    keystoreFileName: 'release-key.jks',
     keystoreBase64: '',
-    storePassword: '',
-    keyAlias: '',
-    keyPassword: '',
+    storePassword: 'apkcreator',
+    keyAlias: 'apkcreator25',
+    keyPassword: 'apkcreator',
     validityYears: 25,
-    certificateName: 'Web To APK Release',
-    organization: 'Android Mobile Apps',
+    certificateName: 'Apk Creator 25 Release',
+    organization: 'Apk Creator 25',
   },
   allowZoom: false,
   googleServicesJson: '',

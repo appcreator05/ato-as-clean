@@ -6,7 +6,7 @@
  */
 
 export const CANONICAL_BACKEND_URL =
-  'https://ais-dev-gxyvg3phkakhlvxkyoqcx7-32286104148.asia-southeast1.run.app';
+  'https://ais-dev-7jlfq5kkxbc3n5qurx6uwu-85499101072.asia-southeast1.run.app';
 
 export function getBackendBaseUrl(): string {
   if (typeof window === 'undefined') {

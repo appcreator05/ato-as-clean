@@ -22,7 +22,7 @@ export function parseGoogleServicesJson(jsonString: string): ParsedGoogleService
     const data = JSON.parse(jsonString.trim());
     
     if (typeof data !== 'object' || data === null) {
-      return { isValid: false, error: 'Invalid JSON format (অকার্যকর JSON ফরম্যাট)' };
+      return { isValid: false, error: 'Invalid JSON format' };
     }
 
     const projectInfo = data.project_info || {};
